@@ -15,10 +15,13 @@ dfa/Group.ps
 dfa/Process.ps
 lib/Cluster/Init.pm
 lib/Cluster/Init/Daemon.pm
+lib/Cluster/Init/DB.pm
 lib/Cluster/Init/Conf.pm
 lib/Cluster/Init/Group.pm
 lib/Cluster/Init/Process.pm
+lib/Cluster/Init/Util.pm
 lib/Cluster/Init/Kernel.pm
+lib/Cluster/Init/Conf.pm
 lib/Cluster/Init/Status.pm
 lib/Cluster/Init/DFA/Group.pm
 lib/Cluster/Init/DFA/Daemon.pm

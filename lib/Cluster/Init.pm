@@ -49,7 +49,7 @@ use Cluster::Init::Util qw(debug);
 use Cluster::Init::Daemon;
 use base qw(Cluster::Init::Util);
 
-our $VERSION     = "0.117";
+our $VERSION     = "0.118";
 
 my $debug=$ENV{DEBUG} || 0;
 
