@@ -1,4 +1,6 @@
 package Cluster::Init::DB;
+use strict;
+use warnings;
 #
 # an in-memory object database
 #

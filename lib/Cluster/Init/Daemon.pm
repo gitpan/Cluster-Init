@@ -1,5 +1,6 @@
 package Cluster::Init::Daemon;
 use strict;
+use warnings;
 use Data::Dump qw(dump);
 use Carp::Assert;
 use IO::Socket;

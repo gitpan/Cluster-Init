@@ -1,5 +1,6 @@
 package Cluster::Init::Util;
 use strict;
+use warnings;
 use Data::Dump qw(dump);
 use Carp;
 use Carp::Assert;
@@ -69,14 +70,6 @@ sub _stacktrace
   return $out;
 }
 
-sub XXXinit
-{
-  my $self=shift;
-  # $self->fields qw(watchers);
-  $self->{trail}=();
-  return $self;
-}
-
 sub dq
 {
   my $self=shift;
@@ -108,18 +101,6 @@ sub dq
   }
   debug "$desc: calling tick($event,$data)";
   $self->tick($event,$data);
-}
-
-sub XXXhistory
-{
-  my $self=shift;
-  my ($event,$data)=@_;
-  if ($event)
-  {
-    push @{$self->{trail}}, [$event,$data];
-    splice(@{$self->{trail}},10); 
-  }
-  return @{$self->{trail}};
 }
 
 sub event
