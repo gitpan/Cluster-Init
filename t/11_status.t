@@ -10,9 +10,9 @@ BEGIN { plan tests => 2 }
 use Cluster::Init;
 
 my %parms = (
-    'inittab' => 't/clinittab',
+    'cltab' => 't/cltab',
     'socket' => 't/clinit.s',
-    'initstat' => 't/clinitstat'
+    'clstat' => 't/clstat'
 	    );
 unless (fork())
 {
@@ -33,7 +33,7 @@ $init->shutdown();
 waitdown();
 
 # warn "bare status()";
-$out = Cluster::Init->status(initstat=>'t/clinitstat');
+$out = Cluster::Init->status(clstat=>'t/clstat');
 # warn $out;
 ok($out =~ /^$/);
 

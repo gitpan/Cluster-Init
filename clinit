@@ -10,8 +10,8 @@ getopts("dhkvc:s:", \%opt) || usage();
 usage() if $opt{h};
 
 my %parms = (
-    'inittab' => $opt{c} || '/etc/clinittab',
-    'socket'  => $opt{s} || '/var/run/clinit/init.s'
+    'cltab' => $opt{c} || '/etc/cltab',
+    'socket'  => $opt{s} || '/var/run/clinit/clinit.s'
 	    );
 
 if ($opt{d})
@@ -51,12 +51,12 @@ sub usage
     -h	help
     -d	start daemon
     -k	kill daemon and all child processes
-    -c  config file (default /etc/clinittab)
-    -s  socket path (default /var/run/clinit/init.s)
+    -c  config file (default /etc/cltab)
+    -s  socket path (default /var/run/clinit/clinit.s)
 
   If resource_group is not given, it defaults to hostname.
 
-  If neither resource_group nor runlevel are given, reread /etc/clinittab.
+  If neither resource_group nor runlevel are given, reread /etc/cltab.
   
   \n";
 }

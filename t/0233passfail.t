@@ -2,7 +2,7 @@
 # vim:set syntax=perl:
 use strict;
 use Test;
-our $inittab;
+our $cltab;
 require "t/utils.pl";
 
 # BEGIN { plan tests => 14, todo => [3,4] }
@@ -15,7 +15,7 @@ use Cluster::Init::Process;
 use Cluster::Init::DFA::Group qw(:constants);
 use Data::Dump qw(dump);
 
-my $conf = Cluster::Init::Conf->new(inittab=>$inittab,context=>'server');
+my $conf = Cluster::Init::Conf->new(cltab=>$cltab,context=>'server');
 my $data;
 
 # create dfa
@@ -28,9 +28,9 @@ $dfa->event(TELL,$data);
 ok(go($dfa,STARTING));
 ok(go($dfa,CHECKING,6));
 ok(go($dfa,PASSED,4));
-# system("cat $inittab");
+# system("cat $cltab");
 ### test fail
-`echo test:test7:3:test:false >> $inittab`;
+`echo test:test7:3:test:false >> $cltab`;
 $dfa->event(TELL,$data);
 ok(go($dfa,FAILED,4));
 

@@ -258,9 +258,9 @@ sub ckhalt
 # Garbage collect old, retired, or changed processes.  Assumes old
 # processes have already been stopped gracefully.  Note that we don't
 # try to do a soft stop here -- procs will get kill -9 if their
-# clinittab entry has been changed or deleted; might want to improve
+# cltab entry has been changed or deleted; might want to improve
 # this in the future.  For now, the workaround is to always do a
-# 'tell' to stop processes before editing clinittab.
+# 'tell' to stop processes before editing cltab.
 sub garbage_collect
 {
   my ($self,$data)=@_;

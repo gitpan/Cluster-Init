@@ -10,9 +10,9 @@ BEGIN { plan tests => 4 }
 use Cluster::Init;
 
 my %parms = (
-    'inittab' => 't/clinittab',
+    'cltab' => 't/cltab',
     'socket' => 't/clinit.s',
-    'initstat' => 't/clinitstat'
+    'clstat' => 't/clstat'
 	    );
 
 unless (fork())
@@ -26,7 +26,7 @@ run(1);
 my $init = Cluster::Init->client (%parms);
 
 # ok($init);
-# ok($init->conf('inittab'),"t/clinittab");
+# ok($init->conf('cltab'),"t/cltab");
 # ok($init->conf('socket'),"t/clinit.s");
 
 ok($init->tell("hellogrp","1"));

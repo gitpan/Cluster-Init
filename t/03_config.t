@@ -12,7 +12,7 @@ use Cluster::Init;
 unless (fork())
 {
   my $daemon = Cluster::Init->daemon (
-      'inittab' => 't/clinittab',
+      'cltab' => 't/cltab',
       'socket' => 't/clinit.s'
       );
   exit;
@@ -21,12 +21,12 @@ unless (fork())
 run(3);
 
 my $client = Cluster::Init->client (
-    'inittab' => 't/clinittab',
+    'cltab' => 't/cltab',
     'socket' => 't/clinit.s'
 			);
 
 ok($client);
-ok($client->conf('inittab'),"t/clinittab");
+ok($client->conf('cltab'),"t/cltab");
 ok($client->conf('socket'),"t/clinit.s");
 
 $client->shutdown();

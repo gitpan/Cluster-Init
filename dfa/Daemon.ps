@@ -3,7 +3,7 @@
 %%For: (stevegt) ,,,
 %%Title: Cluster::Init::DFA::Daemon
 %%Pages: (atend)
-%%BoundingBox: 35 35 577 331
+%%BoundingBox: 35 35 577 335
 %%EndComments
 save
 %%BeginProlog
@@ -227,41 +227,41 @@ def
 
 %%EndSetup
 %%Page: 1 1
-%%PageBoundingBox: 36 36 577 331
+%%PageBoundingBox: 36 36 577 335
 %%PageOrientation: Portrait
 gsave
-35 35 542 296 boxprim clip newpath
+35 35 542 300 boxprim clip newpath
 36 36 translate
 0 0 1 beginpage
-0.4225 set_scale
+0.4286 set_scale
 0 0 translate 0 rotate
-[ /CropBox [36 36 577 331] /PAGES pdfmark
+[ /CropBox [36 36 577 335] /PAGES pdfmark
 0.000 0.000 0.000 graphcolor
 14.00 /Times-Roman set_font
 
 %	start
 gsave 10 dict begin
-993 670 27 18 ellipse_path
+992 670 27 18 ellipse_path
 stroke
 gsave 10 dict begin
-993 665 moveto 29 -0.5 (start) alignedtext
+992 665 moveto 29 -0.5 (start) alignedtext
 end grestore
 end grestore
 
 %	start -> start
-newpath 1013 658 moveto
-1026 654 1038 658 1038 670 curveto
-1038 679 1031 683 1023 683 curveto
+newpath 1012 658 moveto
+1025 654 1037 658 1037 670 curveto
+1037 679 1030 683 1022 683 curveto
 stroke
 0.000 0.000 0.000 edgecolor
-newpath 1023 685 moveto
-1013 682 lineto
-1023 681 lineto
+newpath 1022 685 moveto
+1012 682 lineto
+1022 681 lineto
 closepath
 fill
 0.000 0.000 0.000 edgecolor
 gsave 10 dict begin
-1101 665 moveto 113 -0.5 (idle/read_inittab) alignedtext
+1095 665 moveto 102 -0.5 (idle/read_cltab) alignedtext
 end grestore
 
 %	listen
@@ -274,7 +274,7 @@ end grestore
 end grestore
 
 %	start -> listen
-newpath 968 663 moveto
+newpath 967 663 moveto
 907 647 752 606 682 587 curveto
 stroke
 0.000 0.000 0.000 edgecolor
@@ -285,33 +285,33 @@ closepath
 fill
 0.000 0.000 0.000 edgecolor
 gsave 10 dict begin
-950 619 moveto 165 -0.5 (inittab_ok/start_listener) alignedtext
+944 619 moveto 154 -0.5 (cltab_ok/start_listener) alignedtext
 end grestore
 
 %	halt
 gsave 10 dict begin
-1045 26 27 18 ellipse_path
+1039 26 27 18 ellipse_path
 stroke
 gsave 10 dict begin
-1045 21 moveto 26 -0.5 (halt) alignedtext
+1039 21 moveto 26 -0.5 (halt) alignedtext
 end grestore
 end grestore
 
 %	start -> halt
-newpath 1020 669 moveto
-1071 664 1177 647 1178 578 curveto
-1178 578 1178 578 1178 118 curveto
-1177 69 1118 44 1079 34 curveto
+newpath 1017 663 moveto
+1066 648 1171 612 1172 578 curveto
+1172 578 1172 578 1172 118 curveto
+1171 69 1112 44 1073 34 curveto
 stroke
 0.000 0.000 0.000 edgecolor
-newpath 1080 37 moveto
-1071 32 lineto
-1081 32 lineto
+newpath 1074 37 moveto
+1065 32 lineto
+1075 32 lineto
 closepath
 fill
 0.000 0.000 0.000 edgecolor
 gsave 10 dict begin
-1228 343 moveto 86 -0.5 (inittab_nok/) alignedtext
+1216 343 moveto 74 -0.5 (cltab_nok/) alignedtext
 end grestore
 
 %	listen -> listen
@@ -332,19 +332,19 @@ end grestore
 
 %	listen -> halt
 newpath 675 577 moveto
-766 575 1044 561 1045 486 curveto
-1045 486 1045 486 1045 118 curveto
-1044 96 1045 71 1045 52 curveto
+765 575 1038 560 1039 486 curveto
+1039 486 1039 486 1039 118 curveto
+1038 96 1039 71 1039 52 curveto
 stroke
 0.000 0.000 0.000 edgecolor
-newpath 1043 54 moveto
-1045 44 lineto
-1048 54 lineto
+newpath 1037 54 moveto
+1039 44 lineto
+1042 54 lineto
 closepath
 fill
 0.000 0.000 0.000 edgecolor
 gsave 10 dict begin
-1097 297 moveto 91 -0.5 (socket_error/) alignedtext
+1091 297 moveto 91 -0.5 (socket_error/) alignedtext
 end grestore
 
 %	accept
@@ -374,19 +374,19 @@ gsave 10 dict begin
 end grestore
 
 %	halt -> halt
-newpath 1065 14 moveto
-1078 10 1090 14 1090 26 curveto
-1090 35 1083 39 1075 39 curveto
+newpath 1059 14 moveto
+1072 10 1084 14 1084 26 curveto
+1084 35 1077 39 1069 39 curveto
 stroke
 0.000 0.000 0.000 edgecolor
-newpath 1075 41 moveto
-1065 38 lineto
-1075 37 lineto
+newpath 1069 41 moveto
+1059 38 lineto
+1069 37 lineto
 closepath
 fill
 0.000 0.000 0.000 edgecolor
 gsave 10 dict begin
-1140 21 moveto 87 -0.5 (halttime/bye) alignedtext
+1134 21 moveto 87 -0.5 (halttime/bye) alignedtext
 end grestore
 
 %	accept -> listen
@@ -407,22 +407,22 @@ end grestore
 
 %	readline
 gsave 10 dict begin
-358 394 38 18 ellipse_path
+368 394 38 18 ellipse_path
 stroke
 gsave 10 dict begin
-358 389 moveto 54 -0.5 (readline) alignedtext
+368 389 moveto 54 -0.5 (readline) alignedtext
 end grestore
 end grestore
 
 %	accept -> readline
-newpath 212 468 moveto
-213 456 217 440 226 430 curveto
-239 417 282 407 315 401 curveto
+newpath 216 468 moveto
+219 452 224 432 226 430 curveto
+227 429 284 414 325 404 curveto
 stroke
 0.000 0.000 0.000 edgecolor
-newpath 312 399 moveto
-322 400 lineto
-312 404 lineto
+newpath 324 402 moveto
+334 402 lineto
+325 407 lineto
 closepath
 fill
 0.000 0.000 0.000 edgecolor
@@ -431,15 +431,14 @@ gsave 10 dict begin
 end grestore
 
 %	readline -> listen
-newpath 612 570 moveto
-570 560 505 545 494 542 curveto
-439 527 408 547 372 504 curveto
-350 478 352 436 355 412 curveto
+newpath 613 574 moveto
+546 566 401 542 372 504 curveto
+371 503 369 443 369 412 curveto
 stroke
 0.000 0.000 0.000 edgecolor
-newpath 612 567 moveto
-621 572 lineto
-611 572 lineto
+newpath 610 571 moveto
+619 575 lineto
+609 576 lineto
 closepath
 fill
 0.000 0.000 0.000 edgecolor
@@ -451,7 +450,7 @@ end grestore
 newpath 618 562 moveto
 587 545 538 517 522 504 curveto
 505 490 506 481 490 468 curveto
-457 441 414 419 386 406 curveto
+460 443 420 420 395 407 curveto
 stroke
 0.000 0.000 0.000 edgecolor
 newpath 618 559 moveto
@@ -464,62 +463,61 @@ gsave 10 dict begin
 580 481 moveto 97 -0.5 (cmderr/putres) alignedtext
 end grestore
 
-%	inittab
+%	cltab
 gsave 10 dict begin
-534 302 33 18 ellipse_path
+539 302 27 18 ellipse_path
 stroke
 gsave 10 dict begin
-534 297 moveto 44 -0.5 (inittab) alignedtext
+539 297 moveto 32 -0.5 (cltab) alignedtext
 end grestore
 end grestore
 
-%	readline -> inittab
-newpath 374 378 moveto
-388 363 408 343 418 338 curveto
-424 333 466 321 498 312 curveto
+%	readline -> cltab
+newpath 385 378 moveto
+402 362 425 339 428 338 curveto
+451 324 481 314 505 309 curveto
 stroke
 0.000 0.000 0.000 edgecolor
-newpath 495 310 moveto
-505 310 lineto
-496 315 lineto
+newpath 503 307 moveto
+513 307 lineto
+504 312 lineto
 closepath
 fill
 0.000 0.000 0.000 edgecolor
 gsave 10 dict begin
-479 343 moveto 109 -0.5 (tell/read_inittab) alignedtext
+484 343 moveto 98 -0.5 (tell/read_cltab) alignedtext
 end grestore
 
 %	halting
 gsave 10 dict begin
-714 118 34 18 ellipse_path
+708 118 34 18 ellipse_path
 stroke
 gsave 10 dict begin
-714 113 moveto 47 -0.5 (halting) alignedtext
+708 113 moveto 47 -0.5 (halting) alignedtext
 end grestore
 end grestore
 
 %	readline -> halting
-newpath 359 376 moveto
-361 345 369 283 404 246 curveto
-423 224 602 158 679 130 curveto
+newpath 371 376 moveto
+378 341 393 265 411 246 curveto
+479 169 602 137 666 125 curveto
 stroke
 0.000 0.000 0.000 edgecolor
-newpath 676 128 moveto
-686 128 lineto
-677 133 lineto
+newpath 665 123 moveto
+675 123 lineto
+666 128 lineto
 closepath
 fill
 0.000 0.000 0.000 edgecolor
 gsave 10 dict begin
-469 251 moveto 116 -0.5 (shutdown/haltall) alignedtext
+476 251 moveto 116 -0.5 (shutdown/haltall) alignedtext
 end grestore
 
-%	inittab -> listen
+%	cltab -> listen
 newpath 652 552 moveto
 655 528 656 491 637 468 curveto
-616 444 590 472 569 450 curveto
-533 413 557 387 545 338 curveto
-544 334 541 327 539 320 curveto
+616 443 589 473 568 450 curveto
+563 445 548 358 542 320 curveto
 stroke
 0.000 0.000 0.000 edgecolor
 newpath 655 550 moveto
@@ -529,95 +527,96 @@ closepath
 fill
 0.000 0.000 0.000 edgecolor
 gsave 10 dict begin
-641 435 moveto 128 -0.5 (inittab_nok/putres) alignedtext
+633 435 moveto 117 -0.5 (cltab_nok/putres) alignedtext
 end grestore
 
 %	telling
 gsave 10 dict begin
-714 210 32 18 ellipse_path
+708 210 32 18 ellipse_path
 stroke
 gsave 10 dict begin
-714 205 moveto 42 -0.5 (telling) alignedtext
+708 205 moveto 42 -0.5 (telling) alignedtext
 end grestore
 end grestore
 
-%	inittab -> telling
-newpath 536 284 moveto
-538 269 542 251 548 246 curveto
-550 243 629 227 677 217 curveto
+%	cltab -> telling
+newpath 543 284 moveto
+546 268 551 247 553 246 curveto
+560 238 625 225 668 217 curveto
 stroke
 0.000 0.000 0.000 edgecolor
-newpath 674 215 moveto
-684 216 lineto
-674 220 lineto
+newpath 667 215 moveto
+677 215 lineto
+668 220 lineto
 closepath
 fill
 0.000 0.000 0.000 edgecolor
 gsave 10 dict begin
-624 251 moveto 138 -0.5 (inittab_ok/tellgroup) alignedtext
+623 251 moveto 127 -0.5 (cltab_ok/tellgroup) alignedtext
 end grestore
 
 %	halting -> halt
-newpath 744 110 moveto
-806 93 947 54 1011 35 curveto
+newpath 738 110 moveto
+800 93 941 54 1005 35 curveto
 stroke
 0.000 0.000 0.000 edgecolor
-newpath 1010 33 moveto
-1020 33 lineto
-1011 38 lineto
+newpath 1004 33 moveto
+1014 33 lineto
+1005 38 lineto
 closepath
 fill
 0.000 0.000 0.000 edgecolor
 gsave 10 dict begin
-960 67 moveto 89 -0.5 (halted/putres) alignedtext
+954 67 moveto 89 -0.5 (halted/putres) alignedtext
 end grestore
 
 %	telling -> listen
-newpath 671 556 moveto
-699 525 703 500 715 450 curveto
-734 369 723 268 717 228 curveto
+newpath 662 553 moveto
+663 550 664 546 666 542 curveto
+682 501 694 493 703 450 curveto
+705 438 707 282 708 228 curveto
 stroke
 0.000 0.000 0.000 edgecolor
-newpath 673 557 moveto
-665 563 lineto
-670 554 lineto
+newpath 665 553 moveto
+660 562 lineto
+660 552 lineto
 closepath
 fill
 0.000 0.000 0.000 edgecolor
 gsave 10 dict begin
-793 389 moveto 125 -0.5 (group_nok/putres) alignedtext
+774 389 moveto 125 -0.5 (group_nok/putres) alignedtext
 end grestore
 
 %	telling -> listen
+newpath 683 571 moveto
+779 553 882 585 883 486 curveto
+883 486 883 486 883 302 curveto
+882 238 790 218 740 213 curveto
+stroke
+0.000 0.000 0.000 edgecolor
 newpath 684 573 moveto
-782 554 888 586 889 486 curveto
-889 486 889 486 889 302 curveto
-888 238 796 218 746 213 curveto
-stroke
-0.000 0.000 0.000 edgecolor
-newpath 685 575 moveto
-675 575 lineto
-684 570 lineto
+674 573 lineto
+683 568 lineto
 closepath
 fill
 0.000 0.000 0.000 edgecolor
 gsave 10 dict begin
-953 389 moveto 114 -0.5 (grouptold/putres) alignedtext
+947 389 moveto 114 -0.5 (grouptold/putres) alignedtext
 end grestore
 
 %	telling -> halting
-newpath 714 192 moveto
-714 179 714 160 714 145 curveto
+newpath 708 192 moveto
+708 179 708 160 708 145 curveto
 stroke
 0.000 0.000 0.000 edgecolor
-newpath 712 146 moveto
-714 136 lineto
-717 146 lineto
+newpath 706 146 moveto
+708 136 lineto
+711 146 lineto
 closepath
 fill
 0.000 0.000 0.000 edgecolor
 gsave 10 dict begin
-779 159 moveto 116 -0.5 (shutdown/haltall) alignedtext
+773 159 moveto 116 -0.5 (shutdown/haltall) alignedtext
 end grestore
 endpage
 grestore

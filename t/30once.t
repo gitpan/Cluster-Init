@@ -10,7 +10,7 @@ BEGIN { plan tests => 12 }
 use Cluster::Init;
 
 my %parms = (
-    'inittab' => 't/clinittab',
+    'cltab' => 't/cltab',
     'socket' => 't/clinit.s'
 	    );
 

@@ -49,11 +49,11 @@ use Cluster::Init::Util qw(debug);
 use Cluster::Init::Daemon;
 use base qw(Cluster::Init::Util);
 
-our $VERSION     = "0.118";
+our $VERSION     = "0.202";
 
 my $debug=$ENV{DEBUG} || 0;
 
-my $inittab="/etc/clinittab";
+my $cltab="/etc/cltab";
 
 sub daemon
 {
@@ -104,18 +104,18 @@ sub tell
 }
 
 
-=head2 status(group=>'foo',level=>'bar',initstat=>'/tmp/initstat')
+=head2 status(group=>'foo',level=>'bar',clstat=>'/tmp/clstat')
 
 This method will read the status file for you, dumping it to stdout.
 All arguments are optional.  If you provide 'group' or 'level', then
-output will be filtered accordingly.  If you specify 'initstat', then
+output will be filtered accordingly.  If you specify 'clstat', then
 the status file at the given pathname wil be read (this is handy if
 you need to query multiple Cluster::Init status files in a shared cluster
 filesystem).
 
 In addition to the usual $obj->status() syntax, the status() method
 can also be called as a class function, as in
-Cluster::Init::status(initstat=>'/tmp/initstat').   The 'initstat' argument
+Cluster::Init::status(clstat=>'/tmp/clstat').   The 'clstat' argument
 is required in this case.  Again, this is handy if you want to query a
 running Cluster::Init on another machine via a shared filesystem, without
 creating an Cluster::Init object or daemon here.  
@@ -130,12 +130,12 @@ sub status
   $self=bless({},$self) unless ref($self);
   my $group = $parm{'group'} if $parm{'group'};
   my $level = $parm{'level'} if defined($parm{'level'});
-  my $initstat = $parm{'initstat'} || $self->conf('initstat');
-  die "need to specify initstat" unless $initstat;
-  return "" unless -f $initstat;
+  my $clstat = $parm{'clstat'} || $self->conf('clstat');
+  die "need to specify clstat" unless $clstat;
+  return "" unless -f $clstat;
   my $out ="";
-  open(INITSTAT,"<$initstat") || die $!;
-  while(<INITSTAT>)
+  open(CLSTAT,"<$clstat") || die $!;
+  while(<CLSTAT>)
   {
     chomp;
     my ($obj,$name,$stlevel,$state)=split;
@@ -171,8 +171,8 @@ sub shutdown
 sub getconf
 {
   my $self=shift;
-  $inittab=$self->{inittab} if $self->{inittab};
-  $self->{conf} = Cluster::Init::Conf->new(inittab=>$inittab,@_);
+  $cltab=$self->{cltab} if $self->{cltab};
+  $self->{conf} = Cluster::Init::Conf->new(cltab=>$cltab,@_);
   my $conf = $self->{conf};
   return $conf;
 }
@@ -308,21 +308,23 @@ first execution runs as a daemon, spawning and managing processes.
 Later executions talk to the first, requesting it to switch to
 different runlevels.
 
-The module references a configuration file, /etc/clinittab by default,
-which is identical in format to /etc/inittab, with a new "resource
-group" column added.  See t/clinittab in the Cluster::Init distribution for
-an example.  This file must be replicated across all hosts in the
-cluster by some means of your own.
+The module references a configuration file, /etc/cltab by default,
+which is identical in format to /etc/cltab, with a new "resource
+group" column added.  See t/cltab in the Cluster::Init distribution
+for an example.  This file must be replicated across all hosts in the
+cluster by some means of your own.  See L<OpenMosix::HA> for a way to
+do this on OpenMosix clusters (and get high availability in the
+bargain).
 
 A "resource group" is a collection of applications and physical
 resources which together make up a coherent function.  For example,
 sendmail, /etc/sendmail.cf, and the /var/spool/mqueue directory might
-make up a resource group. From /etc/clinittab you could spawn the
+make up a resource group. From /etc/cltab you could spawn the
 scripts which update sendmail.cf, mount mqueue, and then start
 sendmail itself.
 
 Any time the module changes the runlevel of a resource group, it will
-update a status file, /var/run/clinit/initstat by default.  The format of
+update a status file, /var/run/clinit/clstat by default.  The format of
 this file might change -- you are encouraged to use the
 Cluster::Init::status() method to read it (though the interface for
 status() might change also.)  This will be firmed up before version
@@ -359,28 +361,28 @@ The constructor accepts an optional hash containing the paths to the
 configuration file, socket, and/or status output file, like this:
 
   my $init = new Cluster::Init (
-      'inittab' => '/etc/clinittab',
+      'cltab' => '/etc/cltab',
       'socket' => '/var/run/clinit/init.s'
-      'initstat' => '/var/run/clinit/initstat'
+      'clstat' => '/var/run/clinit/clstat'
 			  );
 
-You can also specify 'socket' and 'initstat' locations in the 
+You can also specify 'socket' and 'clstat' locations in the 
 configuration file itself, like this:
 
   # location of socket
   :::socket:/tmp/init.s
   # location of status file
-  :::initstat:/tmp/initstat
+  :::clstat:/tmp/clstat
 
 Settings passed to the constructor normally override any found in the 
-inittab file.  You can cause the inittab file settings to take precedence 
-though, by saying 'overrride' in the third column of the inittab file,
+cltab file.  You can cause the cltab file settings to take precedence 
+though, by saying 'overrride' in the third column of the cltab file,
 like this:
 
   # location of socket
   ::override:socket:/tmp/init.s
   # location of status file
-  ::override:initstat:/tmp/initstat
+  ::override:clstat:/tmp/clstat
 
 =cut
 
@@ -389,16 +391,16 @@ like this:
   $self->{db} = new DB;
   my $db = $self->{db};
 
-  # parms override inittab
-  $self->conf('inittab',$parms{'inittab'} || "/etc/clinittab");
+  # parms override cltab
+  $self->conf('cltab',$parms{'cltab'} || "/etc/cltab");
   $self->conf('socket',$parms{'socket'}) if $parms{'socket'};
-  $self->conf('initstat',$parms{'initstat'}) if $parms{'initstat'};
+  $self->conf('clstat',$parms{'clstat'}) if $parms{'clstat'};
   $self->conf('log',$parms{'log'}) if $parms{'log'};
-  # inittab *might* override parms
-  $self->_inittab();
+  # cltab *might* override parms
+  $self->_cltab();
   # otherwise use defaults
   $self->conf('socket',"/var/run/clinit/init.s") unless $self->conf('socket');
-  $self->conf('initstat',"/var/run/clinit/initstat") unless $self->conf('initstat');
+  $self->conf('clstat',"/var/run/clinit/clstat") unless $self->conf('clstat');
   $self->conf('log',"/var/run/clinit/initlog") unless $self->conf('log');
 
   # ($self->{'group'}, $self->{'level'}) = ("NULL", "NULL");
@@ -423,7 +425,7 @@ This method talks to a running Cluster::Init daemon, telling it to switch
 the given resource group to the given runlevel.  
 
 All processes listed in the configuration file (normally
-/etc/clinittab) which belong to the new runlevel will be started if
+/etc/cltab) which belong to the new runlevel will be started if
 they aren't already running.
 
 All processes in the resource group which do not belong to the new
@@ -461,18 +463,18 @@ sub shutdown
   1;
 }
 
-=head2 status(group=>'foo',level=>'bar',initstat=>'/tmp/initstat')
+=head2 status(group=>'foo',level=>'bar',clstat=>'/tmp/clstat')
 
 This method will read the status file for you, dumping it to stdout.
 All arguments are optional.  If you provide 'group' or 'level', then
-output will be filtered accordingly.  If you specify 'initstat', then
+output will be filtered accordingly.  If you specify 'clstat', then
 the status file at the given pathname wil be read (this is handy if
 you need to query multiple Cluster::Init status files in a shared cluster
 filesystem).
 
 In addition to the usual $obj->status() syntax, the status() method
 can also be called as a class function, as in
-Cluster::Init::status(initstat=>'/tmp/initstat').   The 'initstat' argument
+Cluster::Init::status(clstat=>'/tmp/clstat').   The 'clstat' argument
 is required in this case.  Again, this is handy if you want to query a
 running Cluster::Init on another machine via a shared filesystem, without
 creating an Cluster::Init object or daemon here.  
@@ -487,11 +489,11 @@ sub status
   $self=bless({},$self) unless ref($self);
   my $group = $parm{'group'} if $parm{'group'};
   my $level = $parm{'level'} if $parm{'level'};
-  my $initstat = $parm{'initstat'} || $self->conf('initstat');
-  die "need to specify initstat" unless $initstat;
-  return "" unless -f $initstat;
-  open(INITSTAT,"<$initstat") || die $!;
-  warn <INITSTAT>;
+  my $clstat = $parm{'clstat'} || $self->conf('clstat');
+  die "need to specify clstat" unless $clstat;
+  return "" unless -f $clstat;
+  open(CLSTAT,"<$clstat") || die $!;
+  warn <CLSTAT>;
 }
 
 =head1 PRIVATE METHODS
@@ -668,8 +670,8 @@ sub _tellgroup
   my $group=shift;
   my $newlevel=shift;
   debug "_tellgroup $group $newlevel";
-  # re-read inittab
-  $self->_inittab();
+  # re-read cltab
+  $self->_cltab();
   # find watcher
   affirm { $group };
   my ($summary) = $db->get({type=>'summary',group=>$group});
@@ -717,7 +719,7 @@ sub _group
   my $e=shift;
   my $self=$e->w->data->[0];
   my $summary=$e->w->data->[1];
-  $self->_inittab();
+  $self->_cltab();
   my $db = $self->{db};
   my $group = $summary->{group};
   debug "group $group";
@@ -814,14 +816,14 @@ sub _sum
 
 =head2 _entry()
 
-Watcher triggered by control activity for an individual inittab entry;
+Watcher triggered by control activity for an individual cltab entry;
 start or stop process accordingly.  Will also be triggered indirectly
 by signals, via _sigchld.
 
 Each entry gets an active watcher, all the time, regardless of whether
 the entry is for a currently active runlevel or not.
 
-If the inittab entry for a given watcher disappears, then the watcher
+If the cltab entry for a given watcher disappears, then the watcher
 kills its own process and cancels itself.
 
 =cut
@@ -1025,12 +1027,12 @@ sub _writestat
   my $self=$e->w->data;
   my $db = $self->{db};
   # debug "in _writestat";
-  return unless $self->conf('initstat');
-  my $initstat = $self->conf('initstat');
-  my $tmp = "$initstat.".time();
+  return unless $self->conf('clstat');
+  my $clstat = $self->conf('clstat');
+  my $tmp = "$clstat.".time();
   # for my $group (keys %{$self->{'status'}})
   store($db,$tmp) || die $!;
-  rename($tmp,$initstat) || die $!;
+  rename($tmp,$clstat) || die $!;
 }
 
 sub _shutdown

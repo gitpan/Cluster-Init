@@ -6,9 +6,11 @@
 # 'hellolong3' entry below.
 # 
 # location of socket
-::override:socket:t/init.s.override
+:::socket:t/clinit.s
 # location of status file
-::override:initstat:t/initstat.override
+:::clstat:t/clstat
+# location of log file
+:::log:t/clinitlog
 hellogrp:hello1:1:wait:/bin/echo "hello world!" > t/out
 hellogrp:hello2:2:respawn:/bin/echo "hello world!" >> t/out
 hellogrp:hello3:3:wait:/bin/sleep 5; cat /dev/null > t/out
@@ -20,8 +22,16 @@ pidgrp:pid1:1:respawn:/bin/echo $$ > t/out; sleep 10
 foogrp:foo1:12:once:/bin/echo foo1start >t/out;sleep 6;/bin/echo foo1end >t/out
 foogrp:foo3:3:once:/bin/echo foo3 >t/out
 bargrp:bar1:1:once:/bin/echo bar1start >t/out;sleep 6;/bin/echo bar1end >t/out
-bazgrp:baz1:1:once:sleep 12; /bin/echo baz1 > t/out
+bazgrp:baz1:1:once:sleep 20; /bin/echo baz1 > t/out
 scramjet:scram1:1:wait:date > t/out
-hellogrp:test1:f:test:/bin/true
-hellogrp:test2:f:test:/bin/false
-hellogrp:test3:t:test:/bin/true
+# for 80test.t
+hellogrp:htest1:f:test:/bin/true
+hellogrp:htest2:f:test:/bin/false
+hellogrp:htest3:t:test:/bin/true
+# for 023*.t
+test:test1:1:wait:sleep 3
+test:test2:1:wait:sleep 2
+test:test3:2:wait:sleep 2
+test:test4:2:wait:sleep 3
+test:test5:3:test:true
+test:test6:3:test:sleep 1

@@ -35,9 +35,9 @@ sub remove
 sub writestat
 {
   my $self=shift;
-  return unless $self->{'initstat'};
-  my $initstat = $self->{'initstat'};
-  my $tmp = "$initstat.".time();
+  return unless $self->{'clstat'};
+  my $clstat = $self->{'clstat'};
+  my $tmp = "$clstat.".time();
   open(TMP,">$tmp") || die $!;
   for my $class (keys %{$self->{state}})
   {
@@ -49,14 +49,14 @@ sub writestat
     }
   }
   close TMP;
-  rename($tmp,$initstat) || die $!;
+  rename($tmp,$clstat) || die $!;
   return '';
 }
 
 sub DESTROY
 {
   my $self=shift;
-  unlink $self->{initstat};
+  unlink $self->{clstat};
 }
 
 

@@ -173,6 +173,10 @@ sub haslevel
   my ($self,$cklevel)=@_;
   my $level=$self->{level};
   my @level;
+  if ($level eq $cklevel)
+  {
+    return $level;
+  }
   if ($level =~/,/)
   {
     @level = split(',',$level);

@@ -25,9 +25,10 @@ sub init
   $self->state(START);
   # $self->idle(to=>$self,min=>10,max=>20,data=>IDLE);
   $self->idle(IDLE);
+  $self->idle(WRITETIME,{min=>30,max=>45});
   $self->{status}=Cluster::Init::Status->new
   (
-    initstat=>$self->conf('initstat')
+    clstat=>$self->conf('clstat')
   );
   # debug dump $self;
   return $self;
@@ -47,17 +48,17 @@ sub bye
   return 1;
 }
 
-sub read_inittab
+sub read_cltab
 {
   my $self=shift;
   my $data=shift;
-  my $rc = $self->{conf}->read_inittab;
+  my $rc = $self->{conf}->read_cltab;
   unless ($rc)
   {
     $data->{msg}=$self->{conf}->{msg};
-    return (INITTAB_NOK,$data);
+    return (CLTAB_NOK,$data);
   }
-  return (INITTAB_OK,$data);
+  return (CLTAB_OK,$data);
 }
 
 sub start_listener
@@ -132,7 +133,7 @@ sub tellgroup
   my $level=$data->{level};
   my $conf=$self->{conf};
   debug "tellgroup $group $level";
-  # first, destroy any groups which are no longer in inittab
+  # first, destroy any groups which are no longer in cltab
   # THIS IS NOT A GRACEFUL SHUTDOWN
   for my $oldgroup ( keys %{$self->{groups}} )
   {
@@ -144,7 +145,7 @@ sub tellgroup
     delete $self->{groups}{$oldgroup};
     # debug `ps -eaf | tail`;
   }
-  # now make sure this group is in inittab
+  # now make sure this group is in cltab
   unless ( $self->{groups}{$group} || $conf->group($group) )
   {
     return (GROUP_NOK,{msg=>"no such group: $group"});

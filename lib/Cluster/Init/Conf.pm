@@ -15,30 +15,30 @@ sub new
   my $class = shift;
   my $self = {@_};
   bless $self, $class;
-  affirm { $self->{inittab} };
+  affirm { $self->{cltab} };
   affirm { $self->{context} };
   $self->{'socket'}||="/var/run/clinit/init.s";
-  $self->{'initstat'}||="/var/run/clinit/initstat";
+  $self->{'clstat'}||="/var/run/clinit/clstat";
   $self->{'log'}||="/var/run/clinit/log";
   return $self;
 }
 
-# read inittab process entries by line number
+# read cltab process entries by line number
 sub line
 {
   my $self=shift;
   my $line=shift;
-  $self->read_inittab;
+  $self->read_cltab;
   my $raw=${$self->{raw}}[$line];
   my $proc = Cluster::Init::Process->new(%$raw);
   return $proc;
 }
 
-# read first inittab process entry
+# read first cltab process entry
 sub firstline
 {
   my $self=shift;
-  $self->read_inittab;
+  $self->read_cltab;
   my @raw = @{$self->{raw}};
   for (my $i=1; $i < @raw; $i++)
   {
@@ -51,12 +51,12 @@ sub firstline
   return undef;
 }
 
-# read next inittab process entry
+# read next cltab process entry
 sub nextline
 {
   my $self=shift;
   my $line=$self->{prevline} || 1;
-  $self->read_inittab;
+  $self->read_cltab;
   my @raw = @{$self->{raw}};
   for (my $i=$line; $i < @raw; $i++)
   {
@@ -70,22 +70,22 @@ sub nextline
 }
 
 
-# return highest line number in inittab
+# return highest line number in cltab
 sub max
 {
   my $self=shift;
-  $self->read_inittab;
+  $self->read_cltab;
   my @raw = @{$self->{raw}};
   return @raw - 1;
 }
 
 # does not set prevline
-# read inittab process entry by tag name
+# read cltab process entry by tag name
 sub tag
 {
   my $self=shift;
   my $tag=shift;
-  $self->read_inittab;
+  $self->read_cltab;
   my @raw = @{$self->{raw}};
   my $raw;
   for $raw (@raw)
@@ -99,13 +99,13 @@ sub tag
 }
 
 # does not set prevline
-# read inittab process entries by group name
+# read cltab process entries by group name
 sub group
 {
   my $self=shift;
   my $group=shift;
   affirm { $group };
-  $self->read_inittab;
+  $self->read_cltab;
   my @raw = @{$self->{raw}};
   # warn dump "@raw";
   my @proc;
@@ -124,25 +124,25 @@ sub get
 {
   my $self=shift;
   my $var=shift;
-  # inittab overrides everything
-  $self->read_inittab;
+  # cltab overrides everything
+  $self->read_cltab;
   return $self->{$var};
 }
 
-sub read_inittab
+sub read_cltab
 {
   my $self=shift;
-  my $inittab = $self->{'inittab'};
-  die "file not found: $inittab\n" unless -f $inittab;
-  my $mtime=(stat($inittab))[9] || die $!;
-  $self->{'inittab_mtime'} = 0 unless $self->{'inittab_mtime'};
-  return $self->{ok} unless $mtime >  $self->{'inittab_mtime'};
-  $self->{'inittab_mtime'} = $mtime;
-  debug "reading inittab $inittab, PWD is $ENV{PWD}";
+  my $cltab = $self->{'cltab'};
+  die "file not found: $cltab\n" unless -f $cltab;
+  my $mtime=(stat($cltab))[9] || die $!;
+  $self->{'cltab_mtime'} = 0 unless $self->{'cltab_mtime'};
+  return $self->{ok} unless $mtime >  $self->{'cltab_mtime'};
+  $self->{'cltab_mtime'} = $mtime;
+  debug "reading cltab $cltab, PWD is $ENV{PWD}";
   my @tag;
   $self->{ok}=1;
   $self->{raw}=[];
-  open(ITAB,"<$inittab") || die $!;
+  open(ITAB,"<$cltab") || die $!;
   while(<ITAB>)
   {
     next if /^#/;

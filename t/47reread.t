@@ -10,8 +10,8 @@ BEGIN { plan tests => 9 }
 use Cluster::Init;
 
 my %parms = (
-    'initstat' => 't/clinitstat',
-    'inittab' => 't/clinittab',
+    'clstat' => 't/clstat',
+    'cltab' => 't/cltab',
     'socket' => 't/clinit.s'
 	    );
 
@@ -31,8 +31,8 @@ $init->tell("pidgrp",1);
 ok(waitstat($init,"pidgrp",1,"DONE"));
 ok(lines(),1);
 my $pid=lastline();
-`cp t/clinittab t/clinittab.sav`;
-`echo "scram:scram2:1:wait:sleep 1" > t/clinittab`; 
+`cp t/cltab t/cltab.sav`;
+`echo "scram:scram2:1:wait:sleep 1" > t/cltab`; 
 $init->tell("scram",1);
 ok(waitstat($init,"scram",1,"DONE"));
 my $pide=lastline();
@@ -40,7 +40,7 @@ ok($pide,$pid);
 sleep 10;
 my $pidf=lastline();
 ok($pide,$pidf);
-`cp t/clinittab.sav t/clinittab`;
+`cp t/cltab.sav t/cltab`;
 $init->tell("pidgrp",1);
 ok(waitstat($init,"pidgrp",1,"DONE"));
 my $pidg=lastline();

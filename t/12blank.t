@@ -12,8 +12,8 @@ BEGIN { plan tests => 3 }
 use Cluster::Init;
 
 my %parms = (
-    'initstat' => 't/clinitstat',
-    'inittab' => 't/clinittab',
+    'clstat' => 't/clstat',
+    'cltab' => 't/cltab',
     'socket' => 't/clinit.s'
 	    );
 unless (fork())

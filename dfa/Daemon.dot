@@ -7,10 +7,10 @@ digraph "Cluster::Init::DFA::Daemon"
 
 
   //async: 
-  start -> start [label="idle/read_inittab"];
-  start -> listen [label="inittab_ok/start_listener"];
+  start -> start [label="idle/read_cltab"];
+  start -> listen [label="cltab_ok/start_listener"];
   //async: socketio
-  start -> halt [label="inittab_nok/"];
+  start -> halt [label="cltab_nok/"];
   listen -> accept [label="socketio/watch_client"];
   //async: socketio clientio
   listen -> halt [label="socket_error/"];
@@ -19,10 +19,10 @@ digraph "Cluster::Init::DFA::Daemon"
   accept -> listen [label="timeout/putres"];
   readline -> listen [label="timeout/putres"];
   readline -> listen [label="cmderr/putres"];
-  readline -> inittab [label="tell/read_inittab"];
+  readline -> cltab [label="tell/read_cltab"];
   readline -> halting [label="shutdown/haltall"];
-  inittab -> listen [label="inittab_nok/putres"];
-  inittab -> telling [label="inittab_ok/tellgroup"];
+  cltab -> listen [label="cltab_nok/putres"];
+  cltab -> telling [label="cltab_ok/tellgroup"];
   telling -> listen [label="group_nok/putres"];
   telling -> listen [label="grouptold/putres"];
   telling -> halting [label="shutdown/haltall"];

@@ -4,8 +4,8 @@ use Cluster::Init::DB;
 use Cluster::Init::Process;
 use Time::HiRes qw(time);
 
-our $inittab="t/clinittab";
-`cp t/clinittab.master $inittab`;
+our $cltab="t/cltab";
+`cp t/cltab.master $cltab`;
 
 sub lines
 {
@@ -101,6 +101,33 @@ sub waitdown
     last if $count==1;
     run(1);
   }
+}
+
+sub waitline
+{
+  my ($line,$timeout)=@_;
+  $timeout||=15;
+  my $start=time;
+  while(1)
+  {
+    open(F,"<t/out") || die $!;
+    my @F=<F>;
+    my $lastline=$F[$#F];
+    unless ($lastline)
+    {
+      run(1);
+      next;
+    }
+    chomp($lastline);
+    last if $lastline eq $line;
+    if ($start + $timeout < time)
+    {
+      warn "got $lastline wanted $line\n";
+      return 0 
+    }
+    run(1);
+  }
+  return 1;
 }
 
 sub waitstat

@@ -5,14 +5,14 @@ use Test;
 require "t/utils.pl";
 
 # BEGIN { plan tests => 14, todo => [3,4] }
-BEGIN { plan tests => 11 }
+BEGIN { plan tests => 12 }
 
 use Cluster::Init;
 # use Event;
 
 my %parms = (
-    'initstat' => 't/clinitstat',
-    'inittab' => 't/clinittab',
+    'clstat' => 't/clstat',
+    'cltab' => 't/cltab',
     'socket' => 't/clinit.s'
 	    );
 
@@ -31,7 +31,7 @@ ok(lines(),0);
 $init->tell("hellogrp",1);
 ok(waitstat($init,"hellogrp",1,"DONE"));
 $init->tell("hellogrp","3");
-run(1);
+ok(waitstat($init,"hellogrp",3,"STARTING"));
 ok($init->status(group=>"hellogrp",level=>"3"),"STARTING");
 ok(lines(),1);
 ok(waitstat($init,"hellogrp",3,"DONE"));
