@@ -5,31 +5,13 @@ package Cluster::Init;
 # The Design 
 # ==========
 #
-# A collection of event-driven DFA state machines; each machine is its
-# own object.
+# A collection of event-driven DFA or finite state machines; each machine 
+# is its own object.
 #
-# Daemon machine started, daemon starts group machines, group machines
+# Daemon machine started first, daemon starts group machines, group machines
 # start process machines, process machines start and stop processes.
 #
 # Client talks to daemon via UNIX domain socket.
-#
-#
-# The Rules 
-# =========
-#
-# Machines start watchers via the kernel.  Only the kernel starts
-# watchers (this is so we can clean up references cleanly).
-#
-# Machines send events to each other via kernel calls.  (This is so we
-# can set consistent priorities.)
-#
-# Only the kernel creates machines.  (This is so the kernel can
-# dispatch events cleanly.)
-#
-# Anyone can read anything in the db, but machines can only change
-# their own entry (XXX can this be enforced in the kernel?).  (This is
-# so machines don't stomp on others' data.)
-#
 #
 use strict;
 use warnings;
@@ -49,11 +31,163 @@ use Cluster::Init::Util qw(debug);
 use Cluster::Init::Daemon;
 use base qw(Cluster::Init::Util);
 
-our $VERSION     = "0.202";
+our $VERSION     = "0.207";
 
 my $debug=$ENV{DEBUG} || 0;
 
 my $cltab="/etc/cltab";
+
+
+=head1 NAME
+
+Cluster::Init - Clusterwide "init", spawn cluster applications
+
+=head1 SYNOPSIS
+
+  use Cluster::Init;
+
+  my $init = new Cluster::Init;
+
+  # spawn all apps for resource group "foo", runlevel "run"
+  $init->tell("foo","run");
+
+  # spawn all apps for resource group "foo", runlevel "runmore"
+  # (this stops everything started by runlevel "run")
+  $init->tell("foo","runmore");
+
+  # spawn all apps for resource group "bar", runlevel "3"
+  # (this does *not* stop or otherwise affect anything in "foo")
+  $init->tell("bar",3);
+
+=head1 DESCRIPTION
+
+This module provides basic B<init> functionality, giving you a single
+inittab-like file to manage initialization and daemon startup across a
+cluster or collection of machines.  
+
+This module is used by B<OpenMosix::HA>, for instance, to provide high
+availability with failure detection, automatic migration, and restart
+of applications running in a cluster.  B<OpenMosix::HA> provides you
+with the ability to build 24x7 mission-critical, high-performance
+server farms using only commodity hardware.  See L<OpenMosix::HA>.
+
+I wrote the original version of this module to provide a more flexible
+interface between IBM's AIX HACMP cluster manager and managed
+applications.  This provided a cleaner configuration, much faster
+configuration changes, and respawn ability for individual daemons.
+
+Other uses abound, including non-cluster environments -- use your
+imagination.  Generically, what you get in this package is an
+application-level "init" written in Perl, with added bits in the form
+of resource groups, status file output, and a 'test' runmode (see
+below).  
+
+=head1 INSTALLATION
+
+Use Perl's normal sequence:
+
+  perl Makefile.PL
+  make
+  make test
+  make install
+
+This module includes a script, B<clinit>, which will be installed when
+you run 'make install'.  See the output of C<perl -V:installscript> to
+find out which directory the script is installed in.
+
+=head1 CONFIGURATION
+
+You will need to create a configuration file, F</etc/cltab> by
+default, which is identical in format to F</etc/inittab>, with a new
+"resource group" column added.  See F<t/cltab> in the B<Cluster::Init>
+distribution for an example.  This file must be replicated across all
+hosts in the cluster by some means of your own.  On OpenMosix
+clusters, B<OpenMosix::HA> will replicate this file for you.  See
+F<http://www.Infrastructures.Org> for ways to do this in other
+environments.
+
+A I<resource group> is a collection of applications and physical
+resources (like filesystem mounts) which need to execute together on
+the same cluster node.  Resource groups allow easy migration of
+applications between nodes.  For example, B<sendmail>,
+F</etc/sendmail.cf>, and the F</var/spool/mqueue> directory might make
+up a resource group.  From F</etc/cltab> you could spawn the scripts
+which update F<sendmail.cf>, mount F<mqueue>, and then start
+B<sendmail> itself.  For another example, Apache, a virtual IP
+address, and the filesystem containing the HTML document tree might
+together constitute a resource group.  To start this resource group,
+you might need to mount the filesystem, ifconfig the virtual IP, and
+start httpd.  This sequence can easily be specified in F</etc/cltab>.
+
+Any time B<Cluster::Init> changes the runlevel of a resource group, it
+will update a status file, F</var/run/clinit/clstat> by default.  This
+file can be read directly or via the C<status()> method, below.
+
+You can specify tests to be performed during startup of a resource
+group:  In addition to the init-style modes of 'once', 'wait',
+'respawn', and 'off', B<Cluster::Init> supports a 'test' runmode.  If
+the return code of a 'test' command is anything other than zero, then
+the resource group as a whole is marked as 'FAILED' in F<clstat>.  For
+example, this 'test' mode is used by B<OpenMosix::HA> to test a node
+for eligibility before attempting to start a resource group there.
+
+=head1 CLINIT SCRIPT 
+
+Cluster::Init includes B<clinit>, a script which is intended to be a
+bolt-in cluster init tool.  The script is called like B<init>, with
+the addition of a new "resource group" argument.  See the output of
+C<clinit -h>.  
+
+The first time you execute B<clinit> you will need to use the C<-d>
+flag only, to start the B<Cluster::Init> daemon.  
+
+Once you have the daemon running, use B<clinit> I<without> the C<-d>
+flag.  This will cause it to run as a client only, talking to the
+daemon via a UNIX domain socket.  At this point you will use B<clinit>
+in roughly the same way you would use the UNIX B<telinit>, in this
+case commanding resource groups to switch to different runlevels.
+That's it! 
+
+Use the C<-k> flag to tell the daemon and all child processes to shut
+down gracefully.
+
+=head2 CLINIT SCRIPT EXAMPLES
+
+(here we will show an example cltab, some clinit command lines, and
+the resulting clstat contents -- in the meantime take a look at the
+contents of F<t/*>)
+
+=head1 PUBLIC METHODS
+
+=head2 daemon(%parms)
+
+The server-side constructor.  Accepts an optional hash containing the
+paths to the configuration file, socket, and status output file, like
+this:
+
+  my $init = new Cluster::Init (
+      'cltab' => '/etc/cltab',
+      'socket' => '/var/run/clinit/init.s'
+      'clstat' => '/var/run/clinit/clstat'
+			  );
+
+You can also specify 'socket' and 'clstat' locations in the F<cltab>
+file itself, like this:
+
+  # location of socket
+  :::socket:/tmp/init.s
+  # location of status file
+  :::clstat:/tmp/clstat
+
+Settings found in the cltab file override those found in the
+constructor.
+
+This method opens a UNIX domain socket, F</var/run/clinit/init.s> by
+default.  Subsequent executions communicate with the first via this
+socket.  
+
+
+=cut
 
 sub daemon
 {
@@ -273,80 +407,6 @@ sub log
   close LOG;
 }
 
-=head1 NAME
-
-Cluster::Init - Clusterwide "init", spawn cluster applications
-
-=head1 SYNOPSIS
-
-  use Cluster::Init;
-
-  my $init = new Cluster::Init;
-
-  # spawn all apps for resource group "foo", runlevel "run"
-  $init->tell("foo","run");
-
-  # spawn all apps for resource group "foo", runlevel "runmore"
-  # (this stops everything started by runlevel "run")
-  $init->tell("foo","runmore");
-
-=head1 DESCRIPTION
-
-This module provides basic "init" functionality, giving you a single
-inittab-like file to manage initialization and daemon startup across a
-cluster or collection of machines.
-
-=head1 USAGE
-
-This module's package includes a script 'clinit', which is intended to
-be a bolt-in cluster init tool, calling Cluster::Init.  The script is
-called like 'init', with the addition of a new "resource group"
-argument.
-
-This module is intended to be used like 'init' and 'telinit' -- the
-first execution runs as a daemon, spawning and managing processes.
-Later executions talk to the first, requesting it to switch to
-different runlevels.
-
-The module references a configuration file, /etc/cltab by default,
-which is identical in format to /etc/cltab, with a new "resource
-group" column added.  See t/cltab in the Cluster::Init distribution
-for an example.  This file must be replicated across all hosts in the
-cluster by some means of your own.  See L<OpenMosix::HA> for a way to
-do this on OpenMosix clusters (and get high availability in the
-bargain).
-
-A "resource group" is a collection of applications and physical
-resources which together make up a coherent function.  For example,
-sendmail, /etc/sendmail.cf, and the /var/spool/mqueue directory might
-make up a resource group. From /etc/cltab you could spawn the
-scripts which update sendmail.cf, mount mqueue, and then start
-sendmail itself.
-
-Any time the module changes the runlevel of a resource group, it will
-update a status file, /var/run/clinit/clstat by default.  The format of
-this file might change -- you are encouraged to use the
-Cluster::Init::status() method to read it (though the interface for
-status() might change also.)  This will be firmed up before version
-1.0.  The reason for this state of flux is that I need status() for an
-openMosix HA cluster init layer, which I'll probably call
-Cluster::Mosix:HA or somesuch.  Watch CPAN.
-
-In addition to the init-style modes of 'once', 'wait', 'respawn', and
-'off', Cluster::Init also supports a 'test' mode.  If the return code of a
-'test' mode command is anything other than zero, then the resource
-group as a whole is marked as 'failed' in the status file.  If the
-return code is zero, then the resource group is marked 'running'.  Again,
-this interface may change to support Cluster::Mosix:HA.  See t/* for
-examples.
-
-
-=head1 PUBLIC METHODS
-
-=head2 new
-
-=cut
-
 sub new
 {
   my $class=shift;
@@ -355,36 +415,6 @@ sub new
   $self->{role}='unknown';
   bless $self, $class;
 
-=pod
-
-The constructor accepts an optional hash containing the paths to the
-configuration file, socket, and/or status output file, like this:
-
-  my $init = new Cluster::Init (
-      'cltab' => '/etc/cltab',
-      'socket' => '/var/run/clinit/init.s'
-      'clstat' => '/var/run/clinit/clstat'
-			  );
-
-You can also specify 'socket' and 'clstat' locations in the 
-configuration file itself, like this:
-
-  # location of socket
-  :::socket:/tmp/init.s
-  # location of status file
-  :::clstat:/tmp/clstat
-
-Settings passed to the constructor normally override any found in the 
-cltab file.  You can cause the cltab file settings to take precedence 
-though, by saying 'overrride' in the third column of the cltab file,
-like this:
-
-  # location of socket
-  ::override:socket:/tmp/init.s
-  # location of status file
-  ::override:clstat:/tmp/clstat
-
-=cut
 
   my %parms=@_;
 
@@ -406,13 +436,6 @@ like this:
   # ($self->{'group'}, $self->{'level'}) = ("NULL", "NULL");
 
 
-=pod
-
-The first time this method is executed on a machine, it opens a UNIX
-domain socket, /var/run/clinit/init.s by default.  Subsequent executions
-communicate with the first via this socket.  
-
-=cut
 
   $self->_open_socket() || $self->_start_daemon() || die $!;
 

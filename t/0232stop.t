@@ -6,7 +6,7 @@ our $cltab;
 require "t/utils.pl";
 
 # BEGIN { plan tests => 14, todo => [3,4] }
-BEGIN { plan tests => 10 }
+BEGIN { plan tests => 16 }
 
 use Cluster::Init::Conf;
 use Cluster::Init::Group;
@@ -21,19 +21,31 @@ my $data;
 # create dfa
 my $dfa=Cluster::Init::Group->new ( group=>'test', conf=>$conf );
 ok(go($dfa,CONFIGURED));
+my $db=$dfa->{db};
+ok $db;
 
 # abort in STARTING...
-$data={level=>2};
+# $data={level=>2};
 # $ENV{DEBUG}=1;
 $data->{level}=2;
 $dfa->event(TELL,$data);
 ok(go($dfa,STARTING,4));
+my ($test3) = $db->get('Cluster::Init::Process', {tag=>'test3'});
+ok $test3;
+run(4);
+my ($test4) = $db->get('Cluster::Init::Process', {tag=>'test4'});
+ok $test4;
 $data->{level}=1;
 $dfa->event(TELL,$data);
 ok(go($dfa,STOPPING));
-# following test fails intermittently
-ok(go($dfa,STARTING,15));
+# following tests fail intermittently
+ok(go($dfa,DUMPING));
+ok(go($dfa,STARTING,7));
+my ($test1) = $db->get('Cluster::Init::Process', {tag=>'test1'});
+ok $test1;
 ok(go($dfa,CHECKING,7));
+my ($test2) = $db->get('Cluster::Init::Process', {tag=>'test2'});
+ok $test2;
 # ...and in CHECKING...
 $data->{level}=2;
 $dfa->event(TELL,$data);

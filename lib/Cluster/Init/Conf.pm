@@ -133,7 +133,13 @@ sub read_cltab
 {
   my $self=shift;
   my $cltab = $self->{'cltab'};
-  die "file not found: $cltab\n" unless -f $cltab;
+  unless (-f $cltab)
+  {
+    warn "file not found: $cltab\n";
+    $self->{msg}="file not found: $cltab\n";
+    $self->{ok}=1;
+    return $self->{ok};
+  }
   my $mtime=(stat($cltab))[9] || die $!;
   $self->{'cltab_mtime'} = 0 unless $self->{'cltab_mtime'};
   return $self->{ok} unless $mtime >  $self->{'cltab_mtime'};

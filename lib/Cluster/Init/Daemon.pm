@@ -34,6 +34,14 @@ sub init
   return $self;
 }
 
+sub writestat
+{
+  my $self=shift;
+  my $status=$self->{status};
+  $status->writestat(@_);
+  return '';
+}
+
 sub conf
 {
   my $self=shift;
