@@ -1,3 +1,14 @@
+2003-08-10 01:12  stevegt
+
+	* lib/Cluster/Init.pm, lib/Cluster/Init/Group.pm,
+	lib/Cluster/Init/Util.pm, t/0232stop.t, t/50multigrp.t: fix perl
+	5.8 bug
+
+2003-07-25 19:41  stevegt
+
+	* lib/Cluster/: Init.pm, Init/DB.pm, Init/Daemon.pm, Init/Util.pm:
+	add signal handling to HA monitor()
+
 2003-04-14 01:14  stevegt
 
 	* lib/Cluster/: Init.pm, Init/Conf.pm: docs done
