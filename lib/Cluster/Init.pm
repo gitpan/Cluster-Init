@@ -31,7 +31,7 @@ use Cluster::Init::Util qw(debug);
 use Cluster::Init::Daemon;
 use base qw(Cluster::Init::Util);
 
-our $VERSION     = "0.207";
+our $VERSION     = "0.211";
 
 my $debug=$ENV{DEBUG} || 0;
 
@@ -46,18 +46,24 @@ Cluster::Init - Clusterwide "init", spawn cluster applications
 
   use Cluster::Init;
 
-  my $init = new Cluster::Init;
+  unless (fork())
+  {
+    Cluster::Init->daemon;
+    exit 0;
+  }
+
+  my $client = Cluster::Init->client;
 
   # spawn all apps for resource group "foo", runlevel "run"
-  $init->tell("foo","run");
+  $client->tell("foo","run");
 
   # spawn all apps for resource group "foo", runlevel "runmore"
   # (this stops everything started by runlevel "run")
-  $init->tell("foo","runmore");
+  $client->tell("foo","runmore");
 
   # spawn all apps for resource group "bar", runlevel "3"
   # (this does *not* stop or otherwise affect anything in "foo")
-  $init->tell("bar",3);
+  $client->tell("bar",3);
 
 =head1 DESCRIPTION
 
@@ -76,11 +82,60 @@ interface between IBM's AIX HACMP cluster manager and managed
 applications.  This provided a cleaner configuration, much faster
 configuration changes, and respawn ability for individual daemons.
 
-Other uses abound, including non-cluster environments -- use your
-imagination.  Generically, what you get in this package is an
-application-level "init" written in Perl, with added bits in the form
-of resource groups, status file output, and a 'test' runmode (see
-below).  
+Other uses are possible, including non-cluster environments -- use
+your imagination.  Generically, what you get in this package is an
+application-level "init" written in Perl, with added ability to
+configure resource groups, status file output, and a 'test' runmode
+(see below).  
+
+Commercial support for this module is available: see L</SUPPORT>.
+
+=head1 QUICK START
+
+See L<http://www.Infrastructures.Org> for cluster management
+techniques, including clean ways to install, replicate, and update
+nodes.
+
+See L</CONCEPTS> for an explanation of terms.
+
+Much of the following work is done for you if you're running
+B<OpenMosix::HA> on an openMosix cluster -- see L<OpenMosix::HA>.
+
+To use B<Cluster::Init> (without B<OpenMosix::HA>) to manage your
+cluster-hosted processes, on either a high-throughput computing
+cluster or a high-availability cluster:
+
+=over 4
+
+=item *
+
+Install B<Cluster::Init> on each node.  
+
+=item *
+
+Create L<"/etc/cltab">.
+
+=item * 
+
+Replicate L<"/etc/cltab"> to all nodes.
+
+=item * 
+
+Run 'C<clinit -d>' on each node.  Putting this in F</etc/inittab> as a
+"respawn" process would be a good idea, or you could have it started
+as a managed process under HACMP, VCS, Linux-HA etc.
+
+=item * 
+
+Run 'C<clinit my_group my_level>' on each node where you want resource
+group I<my_group> to be running at runlevel I<my_level>.  
+
+=item * 
+
+Check current status in L<"/var/run/clinit/clstat"> on each node.  (Or
+use B<OpenMosix::HA>, which collates this for you across all nodes.)
+
+=back
 
 =head1 INSTALLATION
 
@@ -91,55 +146,118 @@ Use Perl's normal sequence:
   make test
   make install
 
-This module includes a script, B<clinit>, which will be installed when
+You'll need to install this module on each node in the cluster.  
+
+This module includes a script, L</clinit>, which will be installed when
 you run 'make install'.  See the output of C<perl -V:installscript> to
 find out which directory the script is installed in.
 
-=head1 CONFIGURATION
+=head1 CONCEPTS
 
-You will need to create a configuration file, F</etc/cltab> by
-default, which is identical in format to F</etc/inittab>, with a new
-"resource group" column added.  See F<t/cltab> in the B<Cluster::Init>
-distribution for an example.  This file must be replicated across all
-hosts in the cluster by some means of your own.  On OpenMosix
-clusters, B<OpenMosix::HA> will replicate this file for you.  See
-F<http://www.Infrastructures.Org> for ways to do this in other
-environments.
+=over 4
 
-A I<resource group> is a collection of applications and physical
-resources (like filesystem mounts) which need to execute together on
-the same cluster node.  Resource groups allow easy migration of
-applications between nodes.  For example, B<sendmail>,
-F</etc/sendmail.cf>, and the F</var/spool/mqueue> directory might make
-up a resource group.  From F</etc/cltab> you could spawn the scripts
-which update F<sendmail.cf>, mount F<mqueue>, and then start
-B<sendmail> itself.  For another example, Apache, a virtual IP
-address, and the filesystem containing the HTML document tree might
-together constitute a resource group.  To start this resource group,
-you might need to mount the filesystem, ifconfig the virtual IP, and
-start httpd.  This sequence can easily be specified in F</etc/cltab>.
+=item Cluster
 
-Any time B<Cluster::Init> changes the runlevel of a resource group, it
-will update a status file, F</var/run/clinit/clstat> by default.  This
-file can be read directly or via the C<status()> method, below.
+A group of machines administered as a single unit and offering a
+common set of services.  See I<enterprise cluster>,
+I<high-availability cluster>, and I<high-throughput cluster>.
 
-You can specify tests to be performed during startup of a resource
-group:  In addition to the init-style modes of 'once', 'wait',
-'respawn', and 'off', B<Cluster::Init> supports a 'test' runmode.  If
-the return code of a 'test' command is anything other than zero, then
-the resource group as a whole is marked as 'FAILED' in F<clstat>.  For
-example, this 'test' mode is used by B<OpenMosix::HA> to test a node
-for eligibility before attempting to start a resource group there.
+=item Computing Cluster
 
-=head1 CLINIT SCRIPT 
+See I<High-Throughput Cluster>.
+
+=item Enterprise Cluster
+
+A well-administered B<enterprise infrastructure> (see
+L<http://www.Infrastructures.Org>), in which each machine, whether
+desktop or server, provides scalable commodity services.  Any machine
+  or group of machines can be easily and quickly replaced, with
+minimal user impact, without restoring from backups, with no advance
+notice or unique preparation.  May include elements of both I<high
+availability> and I<high throughput> clusters.  
+
+=item High-Availability Cluster
+
+(Also B<HA Cluster>.)  A cluster of machines optimized for providing
+high uptime and minimal user impact in case of hardware failure, in
+return for increased per-node expense and complexity.  Normally
+includes shared disk, unattended failover of filesystem mounts and IP
+and MAC addresses, and automatic daemon restart on the surviving
+node(s).  Suitable for applications such as NFS and database servers,
+and other services which normally cannot be replicated easily.
+
+Examples of HA cluster platforms include OpenMosix::HA, Linux-HA, AIX
+HACMP, and Veritas VCS.
+
+Due to the expense of providing the per-node redundancy required for
+high availability, HA clusters are normally not scalable to the
+hundreds of nodes typically needed for high-throughput applications.
+OpenMosix::HA is the exception to this rule; it provides an HA layer
+on top of a high-throughput openMosix cluster.
+
+=item High-Throughput Cluster
+
+A cluster of machines optimized for cheaply delivering large
+quantities of work in a short time, in return for reduced per-process
+reliability.  May include features such as process checkpointing and
+migration, high-speed interconnects, or distributed shared memory.
+Some high-throughput clusters are optimized for scavenging unused
+cycles on desktop machines.  Most high-throughput clusters are
+suitable for supercomputing-class applications which can be
+parallellized across dozens, hundreds, or even thousands of nodes.
+
+Examples of high-throughput cluster platforms include OpenMosix::HA,
+openMosix itself, Linux Beowulf, and Condor.
+
+Due to the internode dependencies inherent in distributed shared
+memory or migration of interactive processes, high-throughput clusters
+normally do not meet the needs of high availability -- they are
+intended for brute-force problem solving where the death of a single
+process out of thousands is not significant.  High-throughput clusters
+are not typically designed to provide mission-critical interactive
+services to the public.  
+
+The one (known) exception is OpenMosix::HA -- it provides high
+availability for both interactive and batch processes running on a
+high-throughput openMosix cluster. 
+
+=item Resource Group
+
+A collection of applications and physical resources (like filesystem
+mounts) which need to execute together on the same cluster node.
+Resource groups allow easy migration of applications between nodes.
+
+Cluster::Init supports resource groups explicitly.  Resource groups
+are configured in L<"/etc/cltab">.
+
+For example, B<sendmail>, F</etc/sendmail.cf>, and the
+F</var/spool/mqueue> directory might make up a resource group -- they
+all need to be present on the same node.  From L<"/etc/cltab">, you
+could spawn the scripts which update F<sendmail.cf>, mount F<mqueue>,
+and then start B<sendmail> itself.  
+
+Another example; Apache, a virtual IP address, and the filesystem
+containing the HTML document tree might together constitute a resource
+group.  To start this resource group, you might need to mount the
+filesystem, ifconfig the virtual IP, and start httpd.  This sequence
+can easily be specified in F</etc/cltab>.
+
+=back
+
+=head1 UTILITIES
+
+=head2 clinit
 
 Cluster::Init includes B<clinit>, a script which is intended to be a
-bolt-in cluster init tool.  The script is called like B<init>, with
-the addition of a new "resource group" argument.  See the output of
-C<clinit -h>.  
+bolt-in cluster init tool.  The script is called like C<init> or
+C<telinit>, with the addition of a new "resource group" argument.  See
+the output of C<clinit -h>.  
 
 The first time you execute B<clinit> you will need to use the C<-d>
-flag only, to start the B<Cluster::Init> daemon.  
+flag only, to start the B<Cluster::Init> daemon.  This flag does not
+automatically background the daemon though -- this is so it will work
+as a "respawn" entry in F</etc/inittab>.  If you're testing from the
+command line or running from a shell script, use 'C<clinit -d &>'.
 
 Once you have the daemon running, use B<clinit> I<without> the C<-d>
 flag.  This will cause it to run as a client only, talking to the
@@ -151,41 +269,29 @@ That's it!
 Use the C<-k> flag to tell the daemon and all child processes to shut
 down gracefully.
 
-=head2 CLINIT SCRIPT EXAMPLES
-
-(here we will show an example cltab, some clinit command lines, and
-the resulting clstat contents -- in the meantime take a look at the
-contents of F<t/*>)
-
 =head1 PUBLIC METHODS
 
-=head2 daemon(%parms)
+=head2 daemon()
 
-The server-side constructor.  Accepts an optional hash containing the
-paths to the configuration file, socket, and status output file, like
-this:
-
-  my $init = new Cluster::Init (
+  # start a Cluster::Init server daemon
+  Cluster::Init->daemon (
       'cltab' => '/etc/cltab',
-      'socket' => '/var/run/clinit/init.s'
+      'socket' => '/var/run/clinit/clinit.s'
       'clstat' => '/var/run/clinit/clstat'
 			  );
 
-You can also specify 'socket' and 'clstat' locations in the F<cltab>
-file itself, like this:
+The server-side constructor.  You'll likely want to fork before
+calling this method -- it does not return until you issue a
+L</shutdown> from a L</client()> process.  See the L</clinit> source code
+for an example.  
 
-  # location of socket
-  :::socket:/tmp/init.s
-  # location of status file
-  :::clstat:/tmp/clstat
+Accepts an optional hash containing the paths to the configuration
+file, socket, and status output file.  You can also specify 'socket'
+and 'clstat' locations in L</"/etc/cltab>.
 
-Settings found in the cltab file override those found in the
-constructor.
-
-This method opens a UNIX domain socket, F</var/run/clinit/init.s> by
-default.  Subsequent executions communicate with the first via this
-socket.  
-
+The daemon opens and listens on a UNIX domain socket,
+L</"/var/run/clinit/clinit.s"> by default.  The L</client()> will
+communicate with the daemon via this socket.  
 
 =cut
 
@@ -200,6 +306,30 @@ sub daemon
   return 1;
 }
 
+=head2 client()
+
+  # create a Cluster::Init client object
+  my $client = Cluster::Init->client (
+      'cltab' => '/etc/cltab',
+      'socket' => '/var/run/clinit/clinit.s'
+      'clstat' => '/var/run/clinit/clstat'
+			  );
+
+The client-side constructor.  
+
+Accepts an optional hash containing the paths to the configuration
+file, socket, and status output file.  You can also specify 'socket'
+and 'clstat' locations in L</"/etc/cltab>.
+
+Returns a B<Cluster::Init> object.  You'll normally call the resulting
+object's L</tell()> method one or more times after this.  See the
+L</clinit> source code for example usage.  
+
+The client looks for the L</daemon()> on a UNIX domain socket,
+L</"/var/run/clinit/clinit.s"> by default.  
+
+=cut
+
 sub client
 {
   my $class = shift;
@@ -209,6 +339,32 @@ sub client
   $self->{'socket'} = $conf->get('socket');
   return $self;
 }
+
+=head2 tell()
+
+  # tell resource group "mygroup" to change to runlevel "newlevel"
+  $client->tell("mygroup", "newlevel");
+
+  # cause Cluster::Init daemon to re-read cltab
+  $client->tell(":::ALL:::", ":::REREAD:::");
+
+Tells a running L</daemon()> to change a resource group to a new runlevel.
+Called as a method on an object returned by L</client()>.  See the
+L</clinit> source code for example usage.  
+
+At this time, this method returns a string containing a success or
+failure message.  I don't use this string in B<OpenMosix::HA>, so it
+isn't very refined -- it doesn't give you much you can use to detect
+failure programmatically, for example.   For a better solution, see
+L</status()>.
+
+The C<tell(":::ALL:::", ":::REREAD:::")> usage is only a convention;
+in fact, any call to C<tell()> with true values for group and level
+will cause a re-read, regardless of whether the values provided match
+any actual group or runlevel. 
+
+=cut
+
 
 sub tell
 {
@@ -238,14 +394,24 @@ sub tell
 }
 
 
-=head2 status(group=>'foo',level=>'bar',clstat=>'/tmp/clstat')
+=head2 status()
 
-This method will read the status file for you, dumping it to stdout.
-All arguments are optional.  If you provide 'group' or 'level', then
-output will be filtered accordingly.  If you specify 'clstat', then
-the status file at the given pathname wil be read (this is handy if
-you need to query multiple Cluster::Init status files in a shared cluster
-filesystem).
+  # return status of all running groups
+  my $text=$client->status();
+
+  # filter by group and level
+  my $text=$client->status(group=>'foo',level=>'bar');
+
+  # provide nonstandard path to clstat
+  my $text=$client->status(group=>'foo',level=>'bar',clstat=>'/tmp/clstat');
+
+This method will read L<"/var/run/clinit/clstat"> for you, dumping it
+to stdout.  All arguments are optional.  If you provide 'group' or
+'level', then output will be filtered accordingly.  If you specify
+'clstat', then the status file at the given pathname will be read
+(this is handy if you need to query multiple Cluster::Init status
+files in a shared cluster filesystem, and is what B<OpenMosix::HA>
+does).
 
 In addition to the usual $obj->status() syntax, the status() method
 can also be called as a class function, as in
@@ -292,7 +458,13 @@ sub status
 
 =head2 shutdown()
 
-Causes daemon to stop all child processes and exit.
+  # tell daemon to gracefully stop all child processes and exit
+  $client->shutdown();
+
+Causes daemon to stop all child processes and exit.  Processes will be
+sent SIGINT, SIGTERM, then SIGKILL at intervals of several seconds;
+the daemon will not exit until the last process has stopped -- this
+method will always return sooner.
 
 =cut
 
@@ -326,869 +498,116 @@ sub loop
   debug $rc if $rc;
 }
 
-package XXX;
-use IO::Socket;
-# use IO::Select;
-use POSIX qw(:signal_h :errno_h :sys_wait_h);
-use Event qw(loop unloop unloop_all all_watchers);
-use Event::Stats;
-# use Time::HiRes qw(time);
-use Storable qw(store retrieve freeze thaw dclone);
-
-
-# Event priorities
-use constant PCLIENT => 1; # client input
-use constant PCHLD   => 2; # sigchld
-use constant PKILL   => 2; # process killers
-use constant PSTART  => 2; # process managers
-
-# Event or group bit states
-#  renumber with:
-#   :perldo $i=1 
-#   :'a,'bperldo s/\d+;/$i;/;$i*=2;
-use constant CONFIGURED	=>    1; # found in config file
-use constant STARTING	=>    2; # to be exec'd
-use constant RUNNING	=>    4; # exec complete
-use constant EXITED	=>    8; # exited, analysis pending
-use constant DONE	=>   16; # exited normally
-use constant KILL1	=>   32; # kill 1 sent
-use constant KILL2	=>   64; # kill 2 sent
-use constant KILL9	=>  128; # kill 9 sent
-use constant KILL15	=>  256; # kill 15 sent
-use constant KILLED	=>  512; # exited after kill 
-use constant PASSED	=> 1024; # 'test' mode exited with zero rc
-use constant FAILED	=> 2048; # 'test' mode exited with nonzero rc
-use constant REMOVED	=> 4096; # not found in config file
-use constant SHUTDOWN	=> 8192; # kill everything and exit
-
-sub debug
-{
-  my ($package, $filename, $line, $subroutine, $hasargs, $wantarray, $evaltext, $is_require, $hints, $bitmask) = caller(1);
-  my $subline = (caller(0))[2];
-  my $msg = join(' ',@_);
-  $msg.="\n" unless $msg =~ /\n$/;
-  warn "$$ $subroutine,$subline: $msg" if $debug;
-  if ($debug > 1)
-  {
-    warn _stacktrace();
-  }
-  if ($debug > 2)
-  {
-    Event::Stats::collect(1);
-    warn sprintf("%d\n%-20s %3s %10s %4s %4s %4s %4s %7s\n", time,
-    "DESC", "PRI", "CBTIME", "PEND", "CARS", "RAN", "DIED", "ELAPSED");
-    for my $w (reverse all_watchers())
-    {
-      my @pending = $w->pending();
-      my $pending = @pending;
-      my $cars=sprintf("%01d%01d%01d%01d",
-      $w->is_cancelled,$w->is_active,$w->is_running,$w->is_suspended);
-      my ($ran,$died,$elapsed) = $w->stats(60);
-      warn sprintf("%-20s %3d %10d %4d %4s %4d %4d %7.3f\n",
-      $w->desc,
-      $w->prio,
-      $w->cbtime,
-      $pending,
-      $cars,
-      $ran,
-      $died,
-      $elapsed);
-    }
-  }
-}
-
-sub log
-{
-  my $self=shift;
-  my $log = $self->conf('log');
-  return unless $log;
-  open(LOG,">>$log") || die $!;
-  print LOG "@_\n";
-  close LOG;
-}
-
-sub new
-{
-  my $class=shift;
-  $class = (ref $class || $class);
-  my $self={};
-  $self->{role}='unknown';
-  bless $self, $class;
-
-
-  my %parms=@_;
-
-  $self->{db} = new DB;
-  my $db = $self->{db};
-
-  # parms override cltab
-  $self->conf('cltab',$parms{'cltab'} || "/etc/cltab");
-  $self->conf('socket',$parms{'socket'}) if $parms{'socket'};
-  $self->conf('clstat',$parms{'clstat'}) if $parms{'clstat'};
-  $self->conf('log',$parms{'log'}) if $parms{'log'};
-  # cltab *might* override parms
-  $self->_cltab();
-  # otherwise use defaults
-  $self->conf('socket',"/var/run/clinit/init.s") unless $self->conf('socket');
-  $self->conf('clstat',"/var/run/clinit/clstat") unless $self->conf('clstat');
-  $self->conf('log',"/var/run/clinit/initlog") unless $self->conf('log');
-
-  # ($self->{'group'}, $self->{'level'}) = ("NULL", "NULL");
-
-
-
-  $self->_open_socket() || $self->_start_daemon() || die $!;
-
-  return $self;
-}
-
-=head2 tell($resource_group,$runlevel)
-
-This method talks to a running Cluster::Init daemon, telling it to switch
-the given resource group to the given runlevel.  
-
-All processes listed in the configuration file (normally
-/etc/cltab) which belong to the new runlevel will be started if
-they aren't already running.
-
-All processes in the resource group which do not belong to the new
-runlevel will be killed.
-
-Other resource groups will not be affected.
-
-=cut
-
-# *all* socket comm to server goes through here
-sub tell
-{
-  my ($self,$group,$runlevel)=@_;
-  debug "opening on client side";
-  my $socket = $self->_open_socket() || die $!;
-  debug "sending $group $runlevel to server";
-  print $socket "$group $runlevel\n";
-  # debug "reading on client side";
-  # my $res = <$socket>;
-  close($socket);
-  debug "done on client side";
-  1;
-}
-
-=head2 shutdown()
-
-Causes daemon to stop all child processes and exit.
-
-=cut
-
-sub shutdown
-{
-  my ($self)=@_;
-  $self->tell(":::ALL:::",":::SHUTDOWN:::");
-  1;
-}
-
-=head2 status(group=>'foo',level=>'bar',clstat=>'/tmp/clstat')
-
-This method will read the status file for you, dumping it to stdout.
-All arguments are optional.  If you provide 'group' or 'level', then
-output will be filtered accordingly.  If you specify 'clstat', then
-the status file at the given pathname wil be read (this is handy if
-you need to query multiple Cluster::Init status files in a shared cluster
-filesystem).
-
-In addition to the usual $obj->status() syntax, the status() method
-can also be called as a class function, as in
-Cluster::Init::status(clstat=>'/tmp/clstat').   The 'clstat' argument
-is required in this case.  Again, this is handy if you want to query a
-running Cluster::Init on another machine via a shared filesystem, without
-creating an Cluster::Init object or daemon here.  
-
-=cut
-
-sub status
-{
-  my $self=shift;
-  my %parm = @_;
-  # allow this to be called as Cluster::Init->status(...)
-  $self=bless({},$self) unless ref($self);
-  my $group = $parm{'group'} if $parm{'group'};
-  my $level = $parm{'level'} if $parm{'level'};
-  my $clstat = $parm{'clstat'} || $self->conf('clstat');
-  die "need to specify clstat" unless $clstat;
-  return "" unless -f $clstat;
-  open(CLSTAT,"<$clstat") || die $!;
-  warn <CLSTAT>;
-}
-
-=head1 PRIVATE METHODS
-
-The following methods are documented here for internal use only.  No
-user serviceable parts inside.
-
-=cut
-
-=head2 _open_socket()
-
-Opens a client-side socket.
-
-=cut
-
-sub _open_socket
-{
-  my $self=shift;
-  my $client = new IO::Socket::UNIX (
-      Peer => $self->conf('socket'),
-      Type => SOCK_STREAM
-				    );
-  return $client;
-}
-
-=head2 _start_daemon()
-
-Opens server-side socket, starts main event loop, with long-running
-event watchers for accepting and processing commands from client,
-child exits, status file maintenance, etc.
-
-=cut
-
-sub _start_daemon
-{
-  my $self=shift;
-  my $db=$self->{db};
-  my $child;
-  unless ($child = fork())
-  {
-    if ($debug > 4)
-    {
-      require NetServer::Portal;
-      NetServer::Portal->default_start();  # creates server
-      warn "NetServer::Portal listening on port ".(7000+($$ % 1000))."\n";
-      $Event::DebugLevel=$debug;
-    }
-    unlink $self->conf('socket');
-    my $server = new IO::Socket::UNIX (
-      Local => $self->conf('socket'),
-      Type => SOCK_STREAM,
-      Listen => SOMAXCONN
-    ) || die $!;
-
-    Event->io
-    (
-      desc=>'_daemon',
-      fd=>$server,
-      cb=>\&_daemon,
-      prio=>PCLIENT,
-      data=>$self
-    );
-
-    Event->var
-    (
-      desc=>'_writestat',
-      var=>\$db->{_mtime},
-      poll=>'w',
-      cb=>\&_writestat,
-      prio=>PCLIENT,
-      data=>$self
-    );
-
-    # $Event::DIED = sub {
-      # Event::verbose_exception_handler(@_);
-      # # warn _stacktrace();
-      # Event::unloop_all();
-      # # exit 1;
-      # };
-
-    my $rc = loop();
-    debug "loop returned $rc";
-    exit 1 unless $rc == SHUTDOWN;
-    debug "exiting normally";
-    # for my $w (all_watchers)
-    # {
-      # $w->cancel();
-      # }
-    exit 0;
-  }
-  debug "Cluster::Init daemon started as PID $child\n"; 
-  sleep 1;
-  return $child;
-}
-
-=head2 _daemon()
-
-Watcher triggered by I/O activity on server socket; calls accept() and
-sets a watcher for client I/O.
-
-=cut
-
-sub _daemon
-{
-  my $e=shift;
-  my $self=$e->w->data;
-  my $server=$e->w->fd;
-  my $client = $server->accept();
-  Event->io
-  (
-    desc=>'_client',
-    fd=>$client,
-    cb=>\&_client,
-    prio=>PCHLD,
-    data=>$self
-  );
-}
-
-=head2 _client()
-
-Watcher triggered by I/O activity on accept()ed client socket; parses
-text from client and does the right thing.
-
-=cut
-
-sub _client
-{
-  my $e=shift;
-  my $self=$e->w->data;
-  my $client=$e->w->fd;
-  debug "reading on server side";
-  my $data=<$client>;
-  $e->w->cancel;
-  unless ($data)
-  {
-    debug "no data";
-    # print $client "no command seen\n";
-    return;
-  }
-  # warn dump($e);
-  # $e->w->debug(0) unless $data;
-  chomp($data);
-  debug "got: $data\n" if $data;
-  my ($group,$level) = split(' ',$data);
-  unless (defined($group) && defined($level))
-  {
-    debug "got garbage";
-    return
-  }
-  if ($level eq ":::SHUTDOWN:::")
-  {
-    $self->_shutdown();
-    # print $client "shutdown accepted\n";
-  }
-  else
-  {
-    $self->_tellgroup($group,$level);
-    # print $client "command accepted\n";
-  }
-}
-
-=head2 _tellgroup($group,$level)
-
-Finds the watcher for a particular resource group, and tells it what
-the new runlevel is.  If the watcher isn't running yet, then we start
-it.  
-
-=cut
-
-sub _tellgroup
-{
-  my $self=shift;
-  my $db=$self->{db};
-  my $group=shift;
-  my $newlevel=shift;
-  debug "_tellgroup $group $newlevel";
-  # re-read cltab
-  $self->_cltab();
-  # find watcher
-  affirm { $group };
-  my ($summary) = $db->get({type=>'summary',group=>$group});
-  unless ($summary)
-  {
-    $summary = $db->ins
-    (
-      {
-	type=>'summary',
-	group=>$group,
-	state=>CONFIGURED,
-	level=>undef()
-      }
-    );
-    affirm { $summary->{_mtime} };
-    my $w = Event->var
-    (
-      desc=>"_group_$group",
-      var=>\$summary->{_mtime},
-      cb=>\&_group,
-      prio=>PSTART,
-      data=>[$self,$summary]
-    );
-    $summary->{w}=$w;
-    # $w->now();
-  }
-  affirm { $summary->{type} eq 'summary' };
-  affirm { $summary->{group} eq $group };
-  $db->upd($summary,{newlevel=>$newlevel});
-}
-
-=head2 _group()
-
-Watcher triggered by control activity for a resource group; start
-and/or stop watchers for the individual entries in the group.
-Maintain master summary of group info.
-
-Setting a runlevel of undef() causes the group to stop all of its
-processes and cancel its watcher.
-
-=cut
-
-sub _group
-{
-  my $e=shift;
-  my $self=$e->w->data->[0];
-  my $summary=$e->w->data->[1];
-  $self->_cltab();
-  my $db = $self->{db};
-  my $group = $summary->{group};
-  debug "group $group";
-  my $level = $summary->{level};
-  my $newlevel = $summary->{newlevel};
-  # dump $db;
-  my @entry = sort byline $db->get({type=>'entry',group=>$group});
-  # make sure every entry has a triggered watcher
-  for my $entry (@entry)
-  {
-    my $tag = $entry->{tag};
-    my $w = $entry->{w};
-    unless ($w)
-    {
-      $w = Event->var
-      (
-	desc=>"_entry_${tag}",
-	var=>\$entry->{_mtime},
-	cb=>\&_entry,
-	prio=>PSTART,
-	data=>[$self,$entry]
-      );
-      $entry->{w}=$w;
-    }
-    debug "triggering";
-    $w->now();
-  }
-
-  # $DB::single=1 if $newlevel eq ":::SHUTDOWN:::";
-  # update state 
-  my $all=$self->_sum(type=>'entry',group=>$group);
-  my $old=0;
-  if (defined($level))
-  {
-    my $levelqr   =qr/(^[^,]*$level   [^,]*$)|((^|,)$level   (,|$))/x;
-    $old=$self->_sum(type=>'entry',group=>$group,level=>$levelqr);
-  }
-  # $old=CONFIGURED unless $old;
-  my $new=0;
-  if (defined($newlevel))
-  {
-    my $newlevelqr=qr/(^[^,]*$newlevel[^,]*$)|((^|,)$newlevel(,|$))/x;
-    $new=$self->_sum(type=>'entry',group=>$group,level=>$newlevelqr);
-  }
-  $new=SHUTDOWN if $new==0 && $newlevel eq ":::SHUTDOWN:::";
-  debug "all $all old $old new $new";
-  my $state=$new | ($old & ~CONFIGURED);
-  if 
-  (
-    (defined($summary->{state}) && ($summary->{state} != $state) ) ||
-    ! defined($summary->{state})
-  )
-  {
-    $db->upd($summary,{state=>$state}) 
-  }
-
-  # update level
-  $level=$newlevel if ($old == 0)          && ($new & ~CONFIGURED);
-  $level=$newlevel if ($old == CONFIGURED) && ($new & ~CONFIGURED);
-  $level=$newlevel if $state == SHUTDOWN;
-  if 
-  (
-    (defined($summary->{level}) && ($summary->{level} ne $level) ) ||
-    ! defined($summary->{level})
-  )
-  {
-    $db->upd($summary,{level=>$level});
-  }
-  # $e->w->stop;
-  # $e->w->start;
-
-  debug "group $group state $state level "
-  .(defined $level ? $level : 'undef')
-  ." newlevel "
-  .(defined $newlevel ? $newlevel : 'undef')
-  ;
-
-}
-
-sub _sum
-{
-  my $self=shift;
-  my %filter=@_;
-  my @item = $self->{db}->get(\%filter);
-  my $sum=0;
-  for my $item (@item)
-  {
-    affirm { $item->{state} };
-    $sum|=$item->{state};
-    # debug "tag ".$item->{tag}." state ".$item->{state}." sum $sum";
-  }
-  return $sum;
-}
-
-=head2 _entry()
-
-Watcher triggered by control activity for an individual cltab entry;
-start or stop process accordingly.  Will also be triggered indirectly
-by signals, via _sigchld.
-
-Each entry gets an active watcher, all the time, regardless of whether
-the entry is for a currently active runlevel or not.
-
-If the cltab entry for a given watcher disappears, then the watcher
-kills its own process and cancels itself.
-
-=cut
-
-sub _entry
-{
-  my $e=shift;
-  my $self=$e->w->data->[0];
-  my $entry=$e->w->data->[1];
-  affirm { $entry->{state} } ;
-  affirm { $entry->{w} } ;
-  my $db = $self->{db};
-  my $w=$e->w;
-  my $tag=$entry->{tag};
-  debug "entry $tag running, address is $w";
-  affirm { $w };
-  affirm { $w == $entry->{w} } ;
-  my $pid=$entry->{pid} || 0;
-  my $group=$entry->{group};
-  my $mode = $entry->{mode};
-  my $cmd = $entry->{cmd};
-  my $elevel=$entry->{level};
-  affirm { $elevel } ;
-  my @level;
-  if ($elevel =~/,/)
-  {
-    @level = split(',',$elevel);
-  }
-  else
-  {
-    @level = split('',$elevel);
-  }
-  debug "entry $tag has levels ".dump(@level);
-  my ($summary) = $db->get({type=>'summary',group=>$group});
-  my $level = $summary->{level};
-  my $newlevel = $summary->{newlevel};
-  # $e->w->stop;
-  # $e->w->start;
-  my $s = $entry->{state};
-  debug "analyzing $tag, state is $s";
-  {
-
-    $s|= SHUTDOWN if $newlevel eq ":::SHUTDOWN:::";
-
-    (STARTING | RUNNING) & $s && do
-    {
-      unless (grep /^$newlevel$/, @level)
-      {
-	$self->_kill($entry);
-	last;
-      }
-    };
-
-    CONFIGURED == $s && do
-    {
-      last unless grep /^$newlevel$/, @level;
-      # this is the *only* place a process gets started
-      $s|=STARTING;
-      $db->upd($entry,{state=>$s});
-      # prevent race -- start the signal handler before forking
-      Event->signal
-      (
-	desc=>"_sigchld_${tag}_$elevel",
-	signal=>'CHLD',
-	cb=>\&_sigchld,
-	prio=>PCHLD,
-	repeat=>1,
-	data=>[$self,$entry]
-      );
-      my $childpid;
-      unless ($childpid = fork())
-      {
-	# child
-	# prevent race -- wait for SIGCONT from parent
-	debug "waiting for SIGCONT: $tag";
-	kill 19, $$;
-	debug "$tag exec $cmd\n";
-	exec($cmd);
-	die $!;
-      }
-      # parent
-      $s|=RUNNING;
-      $db->upd($entry,{state=>$s,rc=>undef,pid=>$childpid});
-      debug "sending $tag SIGCONT";
-      kill 18, $childpid;
-      debug "$childpid forked: $tag: $cmd\n";
-      last;
-    };
-
-    (CONFIGURED | STARTING | RUNNING) == $s && do
-    {
-      $db->upd($entry,{state=>RUNNING});
-      last;
-    };
-
-    RUNNING == $s && do {last};
-
-    (CONFIGURED | SHUTDOWN) == $s && do
-    {
-      # all done
-      # $db->del($entry);
-      $e->w->stop();
-      last;
-    };
-
-    (CONFIGURED | STARTING | RUNNING | SHUTDOWN) == $s && do
-    {
-      $self->_kill($entry);
-      last;
-    };
-
-    (KILLED | REMOVED) & $s && do
-    {
-      affirm { kill(0,$entry->{pid}) == 0 };
-      $db->del($entry);
-      $e->w->cancel();
-      last;
-    };
-
-    (REMOVED & $s) && do
-    {
-      # we've been removed -- kill the process
-      $self->_kill($entry);
-      last;
-    };
-
-    KILLED & $s && do
-    {
-      affirm { kill(0,$entry->{pid}) == 0 };
-      if ($newlevel eq ":::SHUTDOWN:::")
-      {
-	$db->upd($entry,{state=>SHUTDOWN});
-	last;
-      }
-      $db->upd($entry,{state=>CONFIGURED});
-    };
-
-    EXITED & $s && do
-    {
-      affirm { kill(0,$entry->{pid}) == 0 };
-      for ($mode)
-      {
-	/^wait$/    && do { $db->upd($entry,{state=>DONE}) };
-	/^once$/    && do { $db->upd($entry,{state=>DONE}) };
-	/^respawn$/ && do { $db->upd($entry,{state=>CONFIGURED}) };
-	/^test$/    && do 
-	{ 
-	  my $rc=$entry->{rc};
-	  debug "$pid got rc $rc";
-	  my $state=$rc ? FAILED : PASSED;
-	  $db->upd($entry,{state=>$state}) 
-	};
-      }
-      affirm { $entry->{state} != EXITED };
-
-      last;
-    };
-
-    (DONE | PASSED | FAILED) & $s && do 
-    {
-      if ($newlevel eq ":::SHUTDOWN:::")
-      {
-	$db->upd($entry,{state=>SHUTDOWN});
-	last;
-      }
-      last if $newlevel eq $level;
-      $db->upd($entry,{state=>CONFIGURED});
-      last;
-    };
-
-    SHUTDOWN == $s && do
-    {
-      last;
-    };
-
-    die "unknown state $s in ".$entry->{tag};
-    
-  }
-}
-
-sub byline
-{
-  $a->{line} <=> $b->{line};
-}
-
-sub _stacktrace
-{
-  my $out="";
-  for (my $i=1;;$i++)
-  {
-    my @frame = caller($i);
-    last unless @frame;
-    $out .= "$frame[3] $frame[1] line $frame[2]\n";
-  }
-  return $out;
-}
-
-sub _writestat
-{
-  my $e=shift;
-  my $self=$e->w->data;
-  my $db = $self->{db};
-  # debug "in _writestat";
-  return unless $self->conf('clstat');
-  my $clstat = $self->conf('clstat');
-  my $tmp = "$clstat.".time();
-  # for my $group (keys %{$self->{'status'}})
-  store($db,$tmp) || die $!;
-  rename($tmp,$clstat) || die $!;
-}
-
-sub _shutdown
-{
-  my $self=shift;
-  my $db=$self->{db};
-  for my $summary ($db->get({type=>'summary'}))
-  {
-    # tell each group to go away
-    my $group = $summary->{group};
-    affirm { $group };
-    $self->_tellgroup($group,":::SHUTDOWN:::");
-    debug "done telling";
-  }
-  my $w = Event->timer
-  (
-    desc=>'_halt',
-    at=>time+1,
-    interval=>1,
-    cb=>\&_halt,
-    prio=>0,
-    data=>$self
-  );
-  $w->now();
-}
-
-sub _halt
-{
-  my $e=shift;
-  my $self=$e->w->data;
-  my $db=$self->{db};
-  debug "halting";
-  for my $summary ($db->get({type=>'summary'}))
-  {
-    my $group = $summary->{group};
-    my $level = $summary->{level};
-    debug "$group level is $level";
-    if ($summary->{level} ne ":::SHUTDOWN:::")
-    {
-      $self->_tellgroup($group,":::SHUTDOWN:::");
-    debug "done telling again";
-      return 1;
-    }
-  }
-  debug "unlooping";
-  unloop_all(SHUTDOWN);
-}
-
-sub _kill
-{
-  my $self = shift;
-  my $entry = shift;
-  my $tag = $entry->{tag};
-  my $pid = $entry->{pid};
-  debug "killing $tag";
-  my $i=0;
-  for my $sig (2,15,9)
-  {
-    Event->timer
-    (
-      desc=>'__kill',
-      at=>time+$i,
-      interval=>10,
-      cb=>\&__kill,
-      prio=>PKILL,
-      data=>[$self,$entry,$sig]
-    );
-    $i+=10;
-  }
-}
-
-sub __kill
-{
-  my $e=shift;
-  my $self=$e->w->data->[0];
-  my $db=$self->{db};
-  my $entry=$e->w->data->[1];
-  my $sig=$e->w->data->[2];
-  my $tag = $entry->{tag};
-  my $pid = $entry->{pid};
-  my $state = $entry->{state};
-  unless ($pid)
-  {
-    $e->w->stop;
-    return;
-  }
-  unless (kill(0,$pid))
-  {
-    debug "killed $pid\n";
-    $db->upd($entry,{pid=>0,state=>($state|=KILLED)});
-    $e->w->stop;
-    return;
-  }
-  debug "killing $pid with $sig\n";
-  kill($sig,$pid);
-  my $sigbit;
-  $sigbit = KILL2  if $sig == 2;
-  $sigbit = KILL9  if $sig == 9;
-  $sigbit = KILL15 if $sig == 15;
-  $db->upd($entry,{state=>($state|=$sigbit)});
-}
-
-sub _sigchld
-{
-  my $e=shift;
-  my $self=$e->w->data->[0];
-  my $entry=$e->w->data->[1];
-  my $db=$self->{db};
-  # debug dump($self);
-  # debug "got _sigchld in\n". _stacktrace;
-  debug "got _sigchld in ".$entry->{tag};
-  my $pid = $entry->{pid};
-  affirm { $pid };
-  my $waitpid = waitpid($pid, &WNOHANG);
-  my $rc = $?;
-  # debug "waitpid returned: $waitpid\n";
-  affirm { $waitpid != -1 };
-  unless (kill(0,$waitpid) == 0)
-  {
-    # still running -- false alarm
-    debug $entry->{tag}." false alarm";
-    return;
-  }
-  affirm { $pid == $waitpid };
-  # $pid exited
-  debug "$pid returned $rc";
-  my $state=$entry->{state}|EXITED;
-  $db->upd($entry,{state=>$state,rc=>$rc});
-  $e->w->stop;
-}
-
+=head1 FILES
+
+=head2 /etc/cltab
+
+The main B<Cluster::Init> configuration file.  Identical in format to
+F</etc/inittab>, with a new "resource group" column added.  See
+F<t/cltab> in the B<Cluster::Init> distribution for an example.  
+
+The path and name of this file can be changed: see L</daemon()> and
+L</client()>.
+
+This file must be replicated across all hosts in the cluster by some
+means of your own.  On openMosix clusters, B<OpenMosix::HA> will
+replicate this file for you.  See L<http://www.Infrastructures.Org>
+for ways to do this in other environments.
+
+You can specify tests to be performed during startup of a resource
+group:  In addition to the init-style runmodes of 'once', 'wait',
+'respawn', and 'off', B<Cluster::Init> supports a 'test' runmode.  If
+the return code of a 'test' command is anything other than zero, then
+the resource group as a whole is marked as 'FAILED' in
+L</"/var/run/clinit/clstat">.  For example, the 'test' runmode is used by
+B<OpenMosix::HA> to test a node for eligibility before attempting to
+start a resource group there.
+
+You can specify different locations for L</"/var/run/clinit/clinit.s"> 
+and L</"/var/run/clinit/clstat"> in L</"/etc/cltab>, like this:
+  
+  # location of socket
+  :::socket:/tmp/clinit.s
+  # location of status file
+  :::clstat:/tmp/clstat
+
+Settings found in L</"/etc/cltab> override those found in the
+L</daemon()> or L</client()> constructor arguments.
+
+=head2 /var/run/clinit/clstat
+
+Plain-text file showing the status of all running resource groups.
+Any time B<Cluster::Init> changes the runlevel of a resource group, it
+will update this file.  This file can be read directly or via the
+L</status()> method.
+
+The path and name of this file can be changed: see L</daemon()>,
+L</client()>, and L</"/etc/cltab">.
+
+=head2 /var/run/clinit/clinit.s
+
+A UNIX domain socket used by L</client()> to communicate with
+L</daemon()>.
+
+The path and name of this file can be changed: see L</daemon()>,
+L</client()>, and L</"/etc/cltab">.
 
 =head1 BUGS
+
+See TODO file for a more comprehensive and current list.  The most
+significant outstanding bugs right now are:
+
+=over 4
+
+=item *
+
+Perl 5.8 incompatibility -- blows chunks with a scalar dereference
+error.  This module won't work at all on 5.8 until I get a chance to
+fix this.
+
+=item *
+
+Runlevel of '0' (zero) is broken right now; groups named '0' will
+probably never be supported either.  If you pass a '0' as an argument
+to tell() (either group or level), then whatever you intended to
+happen is not going to happen.  
+
+If you're just trying to force a re-read of cltab, then use some
+nonexistent group and level; I use C<tell('::ALL::','::REREAD::')> or
+somesuch, as mentioned in L</tell()>.
+
+If you're just trying to shut a single group off, use something like
+C<tell("realgroupname",999)>.  This will stop all of that group's
+processes gracefully, assuming that there is no real runlevel '999'
+configured for that group.
+
+=item *
+
+Deleting a group from cltab without stopping it first will cause the
+group's processes to be sent SIGKILL -- they will not be stopped
+gracefully with SIGINT or SIGTERM.  Better to send
+C<tell("group",999)> to stop it gracefully first, as mentioned above.
+
+=item *
+
+Duplicate tags in cltab are detected but not enough useful
+exceptions are generated.
+
+=item *
+
+Intermittent failure line 35 t/0232stop.t -- indicator error as far as
+I can tell; just re-run C<make test> for now.
+
+=back 
+
+=head1 SUPPORT
+
+Commercial support for this module is available at
+L<http://clusters.TerraLuna.Org>.  On that web site, you'll also find
+pointers to the latest version, a community mailing list, other
+cluster management software, etc.  You can also find help for general
+infrastructure (and cluster) administration at
+L<http://www.Infrastructures.Org>.
 
 =head1 AUTHOR
 
@@ -1208,7 +627,12 @@ LICENSE file included with this module.
 
 =head1 SEE ALSO
 
-perl(1).
+L<OpenMosix::HA>, 
+L<http://clusters.TerraLuna.Org>, 
+L<http://www.Infrastructures.Org>,
+B<init(8)>,
+B<telinit(8)>,
+B<perl(1)>.
 
 =cut
 

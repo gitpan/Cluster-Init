@@ -1,3 +1,46 @@
+2003-04-14 01:14  stevegt
+
+	* lib/Cluster/: Init.pm, Init/Conf.pm: docs done
+
+2003-04-08 14:39  stevegt
+
+	* Makefile.PL, clinit, lib/Cluster/Init.pm,
+	lib/Cluster/Init/Conf.pm, lib/Cluster/Init/Daemon.pm, t/0232stop.t:
+	checkpoint
+
+2003-04-04 23:47  stevegt
+
+	* Makefile.PL, TODO, lib/Cluster/Init.pm,
+	lib/Cluster/Init/Daemon.pm, t/0232stop.t, t/20wait.t,
+	t/cltab.master, t/utils.pl: clean up misc intermittent test
+	failures; refresh clstat every 30-45 secs even when no groups are
+	updated, to provide OpenMosix::HA heartbeat
+
+2003-04-04 12:20  stevegt
+
+	* MANIFEST, clinit, lib/Cluster/Init.pm, t/50multigrp.t,
+	t/60multichar.t, t/clinittab.master, t/clinittab.override,
+	t/cltab.master, t/utils.pl: rename clinit* to cl*
+
+2003-04-04 11:26  stevegt
+
+	* dfa/Daemon.dot, lib/Cluster/Init.pm, lib/Cluster/Init/Conf.pm,
+	lib/Cluster/Init/Daemon.pm, lib/Cluster/Init/Group.pm,
+	lib/Cluster/Init/Status.pm, t/0230group.t, t/0231level.t,
+	t/0232stop.t, t/0233passfail.t, t/0234halt.t, t/03_config.t,
+	t/08daemon.t, t/10_tell.t, t/11_status.t, t/12blank.t, t/20wait.t,
+	t/25long.t, t/30once.t, t/40respawn.t, t/45init0.t, t/47reread.t,
+	t/48off.t, t/50multigrp.t, t/60multichar.t, t/70clinit.t,
+	t/80test.t, t/clinittab.master, t/clinittab.override,
+	t/cltab.master, t/cltab.override, t/utils.pl, t/xrcize: rename
+	clinit* to cl*
+
+2003-04-04 11:00  stevegt
+
+	* TODO, lib/Cluster/Init/Process.pm, t/clinittab.master,
+	t/cltab.master: intermittent failure test 10 in 60multichar.t ,
+	remove need for comma in single-valued multichar runlevel
+
 2003-04-01 19:45  stevegt
 
 	* MANIFEST, lib/Cluster/Init.pm: update MANIFEST
@@ -31,8 +74,8 @@
 	t/10_tell.t, t/11_status.t, t/12blank.t, t/20wait.t, t/25long.t,
 	t/30once.t, t/40respawn.t, t/45init0.t, t/47reread.t, t/48off.t,
 	t/50multigrp.t, t/60multichar.t, t/70clinit.t, t/80test.t,
-	t/90override.t, t/clinittab.master, t/utils.pl: All 222 tests pass!
-	 Some outstanding items -- see TODO.
+	t/90override.t, t/clinittab.master, t/cltab.master, t/utils.pl: All
+	222 tests pass!  Some outstanding items -- see TODO.
 
 2003-03-14 19:16  stevegt
 
@@ -116,7 +159,8 @@
 2003-01-23 13:55  stevegt
 
 	* t/: 11_status.t, 12blank.t, 80test.t, 90override.t, blank,
-	clinittab.override: checkpoint -- missed adding these earlier
+	clinittab.override, cltab.override: checkpoint -- missed adding
+	these earlier
 
 2003-01-23 13:54  stevegt
 
@@ -125,18 +169,19 @@
 
 2003-01-20 13:11  stevegt
 
-	* lib/Cluster/Init.pm, t/20wait.t, t/clinittab.master: about to
-	rework SIGCHLD handling, add an event queue, crit/noncrit code path
-	marking
+	* lib/Cluster/Init.pm, t/20wait.t, t/clinittab.master,
+	t/cltab.master: about to rework SIGCHLD handling, add an event
+	queue, crit/noncrit code path marking
 
 2003-01-18 23:27  stevegt
 
-	* lib/Cluster/Init.pm, t/clinittab.master: add test mode
+	* lib/Cluster/Init.pm, t/clinittab.master, t/cltab.master: add test
+	mode
 
 2003-01-18 22:41  stevegt
 
 	* lib/Cluster/Init.pm, t/20wait.t, t/40respawn.t, t/50multigrp.t,
-	t/clinittab.master: add status file output
+	t/clinittab.master, t/cltab.master: add status file output
 
 2001-09-21 12:07  stevegt
 
@@ -158,6 +203,6 @@
 	lib/Cluster/Init.pm, t/01_ini.t, t/02_config.t, t/08daemon.t,
 	t/10_tell.t, t/20wait.t, t/25long.t, t/30once.t, t/40respawn.t,
 	t/45init0.t, t/47reread.t, t/48off.t, t/50multigrp.t,
-	t/60multichar.t, t/clinittab.master, t/utils.pl: first version,
-	working great, all 90 regression tests pass
+	t/60multichar.t, t/clinittab.master, t/cltab.master, t/utils.pl:
+	first version, working great, all 90 regression tests pass
 

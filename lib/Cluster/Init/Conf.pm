@@ -17,7 +17,7 @@ sub new
   bless $self, $class;
   affirm { $self->{cltab} };
   affirm { $self->{context} };
-  $self->{'socket'}||="/var/run/clinit/init.s";
+  $self->{'socket'}||="/var/run/clinit/clinit.s";
   $self->{'clstat'}||="/var/run/clinit/clstat";
   $self->{'log'}||="/var/run/clinit/log";
   return $self;
