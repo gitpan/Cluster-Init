@@ -110,7 +110,7 @@ sub startnext
     $proc->start;
     my $w=$self->var(PROC,{var=>\$proc->{state}, poll=>'w'},$data);
     $proc->watchers($w);
-    $DB::single=1;
+    # $DB::single=1;
     return(NOOP,$data);
   }
   return(ALL_STARTED,$data);
@@ -206,6 +206,7 @@ sub destruct
     }
   }
   $self->SUPER::destruct;
+  return 1;
 }
 
 sub kick

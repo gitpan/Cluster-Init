@@ -150,7 +150,7 @@ sub _copy
   my $in=shift;
   my $ref=ref $in;
   return $in unless $ref;
-  $ref eq "SCALAR" && do {my $$out=$$in; return $out};
+  $ref eq "SCALAR" && do {my $out; $$out=$$in; return $out};
   $ref eq "ARRAY" && do
   {
     my @out = map {_copy($_)} @$in;

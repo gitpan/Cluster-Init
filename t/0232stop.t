@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 # vim:set syntax=perl:
 use strict;
+use warnings;
 use Test;
 our $cltab;
 require "t/utils.pl";
@@ -58,7 +59,8 @@ ok(go($dfa,DUMPING,2));
 ok(go($dfa,STARTING,2));
 ok(go($dfa,CHECKING,5));
 
-$dfa->destruct;
+# $dfa->destruct;
+# $DB::single=1;
 
 ### once
 
